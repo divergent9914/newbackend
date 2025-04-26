@@ -1,45 +1,80 @@
 import { 
-  Service, InsertService, 
-  ApiKey, InsertApiKey,
-  Metric, InsertMetric,
-  User, InsertUser
+  User, InsertUser,
+  ApiRoute, InsertApiRoute,
+  Delivery, InsertDelivery,
+  OndcIntegration, InsertOndcIntegration,
+  OrderItem, InsertOrderItem,
+  Order, InsertOrder,
+  Payment, InsertPayment,
+  Product, InsertProduct,
+  ServiceMetric, InsertServiceMetric
 } from '../shared/schema';
 import { db } from './db';
 import { eq } from 'drizzle-orm';
 import { 
-  services, 
-  apiKeys, 
-  metrics, 
-  users 
+  users,
+  apiRoutes,
+  deliveries,
+  ondcIntegration,
+  orderItems,
+  orders,
+  payments,
+  products,
+  serviceMetrics
 } from '../shared/schema';
 
 // Storage Interface
 export interface IStorage {
-  // Service operations
-  getService(id: number): Promise<Service | undefined>;
-  getServices(): Promise<Service[]>;
-  createService(service: InsertService): Promise<Service>;
-  updateService(id: number, service: Partial<InsertService>): Promise<Service | undefined>;
-  deleteService(id: number): Promise<boolean>;
-
-  // API Key operations
-  getApiKey(id: number): Promise<ApiKey | undefined>;
-  getApiKeysByService(serviceId: number): Promise<ApiKey[]>;
-  createApiKey(apiKey: InsertApiKey): Promise<ApiKey>;
-  updateApiKey(id: number, apiKey: Partial<InsertApiKey>): Promise<ApiKey | undefined>;
-  deleteApiKey(id: number): Promise<boolean>;
-
-  // Metrics operations
-  getMetric(id: number): Promise<Metric | undefined>;
-  getMetricsByService(serviceId: number): Promise<Metric[]>;
-  createMetric(metric: InsertMetric): Promise<Metric>;
-
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
   deleteUser(id: number): Promise<boolean>;
+  
+  // Product operations
+  getProduct(id: number): Promise<Product | undefined>;
+  getProducts(): Promise<Product[]>;
+  createProduct(product: InsertProduct): Promise<Product>;
+  updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined>;
+  deleteProduct(id: number): Promise<boolean>;
+  
+  // Order operations
+  getOrder(id: number): Promise<Order | undefined>;
+  getOrdersByUser(userId: number): Promise<Order[]>;
+  createOrder(order: InsertOrder): Promise<Order>;
+  updateOrder(id: number, order: Partial<InsertOrder>): Promise<Order | undefined>;
+  
+  // Order Item operations
+  getOrderItems(orderId: number): Promise<OrderItem[]>;
+  createOrderItem(orderItem: InsertOrderItem): Promise<OrderItem>;
+  
+  // Payment operations
+  getPayment(id: number): Promise<Payment | undefined>;
+  getPaymentsByOrder(orderId: number): Promise<Payment[]>;
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  
+  // Delivery operations
+  getDelivery(id: number): Promise<Delivery | undefined>;
+  getDeliveriesByOrder(orderId: number): Promise<Delivery[]>;
+  createDelivery(delivery: InsertDelivery): Promise<Delivery>;
+  updateDelivery(id: number, delivery: Partial<InsertDelivery>): Promise<Delivery | undefined>;
+  
+  // ONDC Integration operations
+  getOndcIntegrations(): Promise<OndcIntegration[]>;
+  getOndcIntegration(id: number): Promise<OndcIntegration | undefined>;
+  createOndcIntegration(integration: InsertOndcIntegration): Promise<OndcIntegration>;
+  updateOndcIntegration(id: number, integration: Partial<InsertOndcIntegration>): Promise<OndcIntegration | undefined>;
+  
+  // API Route operations
+  getApiRoutes(): Promise<ApiRoute[]>;
+  createApiRoute(route: InsertApiRoute): Promise<ApiRoute>;
+  updateApiRoute(id: number, route: Partial<InsertApiRoute>): Promise<ApiRoute | undefined>;
+  deleteApiRoute(id: number): Promise<boolean>;
+  
+  // Service Metrics operations
+  getServiceMetrics(): Promise<ServiceMetric[]>;
+  createServiceMetric(metric: InsertServiceMetric): Promise<ServiceMetric>;
 }
 
 // Database Storage Implementation
