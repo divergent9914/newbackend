@@ -1,0 +1,19 @@
+{
+  "name": "fullstack-supabase-app",
+  "version": "1.0.0",
+  "description": "Full-stack application with React frontend and Express backend using Supabase",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server/dist/index.js",
+    "client": "cd client && npm run dev",
+    "server": "cd server && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "cd client && npm run build",
+    "build:server": "cd server && npm run build",
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install"
+  },
+  "keywords": ["typescript", "react", "express", "supabase", "fullstack"],
+  "author": "",
+  "license": "MIT"
+}
