@@ -11,7 +11,9 @@ import {
   ShoppingCart,
   Store,
   CreditCard,
-  Truck
+  Truck,
+  Github,
+  Database
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -89,6 +91,38 @@ const Sidebar: React.FC = () => {
                 </Link>
               </li>
             ))}
+          </ul>
+        </div>
+        
+        <div className="mt-8 px-6">
+          <h2 className="text-xs font-semibold text-neutral-medium uppercase tracking-wider mb-2">
+            Integrations
+          </h2>
+          <ul>
+            <li className="mb-1">
+              <Link href="/integrations/github">
+                <a className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+                  isActive('/integrations/github') 
+                    ? 'bg-neutral-lightest text-neutral-darkest' 
+                    : 'text-neutral-dark hover:bg-neutral-lightest'
+                }`}>
+                  <Github className="h-4 w-4 mr-3" />
+                  GitHub Loader
+                </a>
+              </Link>
+            </li>
+            <li className="mb-1">
+              <Link href="/integrations/supabase">
+                <a className={`flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+                  isActive('/integrations/supabase') 
+                    ? 'bg-neutral-lightest text-neutral-darkest' 
+                    : 'text-neutral-dark hover:bg-neutral-lightest'
+                }`}>
+                  <Database className="h-4 w-4 mr-3" />
+                  Supabase Import
+                </a>
+              </Link>
+            </li>
           </ul>
         </div>
       </nav>

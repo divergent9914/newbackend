@@ -7,6 +7,8 @@ import { paymentService } from "./services/paymentService";
 import { deliveryService } from "./services/deliveryService";
 import { apiGateway } from "./gateway/apiGateway";
 import { ondcAdapter } from "./gateway/ondcAdapter";
+import { importFromSupabase } from "./integrations/supabaseImport";
+import { testSupabaseConnection } from "./supabase";
 import { z } from "zod";
 import { 
   insertOrderSchema, 
@@ -365,6 +367,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(tracking);
     } catch (error: any) {
       res.status(404).json({ message: error.message });
+    }
+  });
+
+  // Supabase Integration routes
+  app.get('/api/integrations/supabase/status', async (req, res) => {
+    try {
+      const connected = await testSupabaseConnection();
+      res.json({ connected });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post('/api/integrations/supabase/import', async (req, res) => {
+    try {
+      const result = await importFromSupabase();
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
     }
   });
 

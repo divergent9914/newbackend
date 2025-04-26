@@ -9,6 +9,8 @@ import OndcPage from "@/pages/OndcPage";
 import MonitoringPage from "@/pages/MonitoringPage";
 import DocumentationPage from "@/pages/DocumentationPage";
 import ServiceDetail from "@/pages/ServiceDetail";
+import GitHubLoaderPage from "@/pages/GitHubLoaderPage";
+import SupabaseImportPage from "@/pages/SupabaseImportPage";
 
 function Router() {
   return (
@@ -20,6 +22,8 @@ function Router() {
       <Route path="/ondc" component={OndcPage} />
       <Route path="/monitoring" component={MonitoringPage} />
       <Route path="/docs" component={DocumentationPage} />
+      <Route path="/integrations/github" component={GitHubLoaderPage} />
+      <Route path="/integrations/supabase" component={SupabaseImportPage} />
       <Route component={NotFound} />
     </Switch>
   );
