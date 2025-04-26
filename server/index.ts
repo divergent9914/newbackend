@@ -2,10 +2,15 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { registerRoutes } from './routes';
-import { json, urlencoded } from 'body-parser';
+import bodyParser from 'body-parser';
 import http from 'http';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+// Handle the __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load environment variables
 dotenv.config();
@@ -19,8 +24,8 @@ const server = http.createServer(app);
 
 // Middleware
 app.use(cors());
-app.use(json());
-app.use(urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // Register API routes
 registerRoutes(app);

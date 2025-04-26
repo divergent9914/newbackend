@@ -1,11 +1,15 @@
-import express, { Request, Response, Router, NextFunction } from 'express';
+import express, { Router } from 'express';
+// Define Request and Response types to avoid ESM compatibility issues
+type Request = any;
+type Response = any;
+type NextFunction = any;
 import { storage } from './storage';
 import { supabase, testSupabaseConnection } from './supabase';
 import { testConnection } from './db';
 import { loginSchema, serviceInsertSchema, apiKeyInsertSchema } from '../shared/schema';
 import { z } from 'zod';
 
-export async function registerRoutes(app: express.Express) {
+export async function registerRoutes(app: any) {
   const router = Router();
 
   // Status endpoint
@@ -259,7 +263,7 @@ export async function registerRoutes(app: express.Express) {
             "bpp/descriptor": {
               name: "Sample Marketplace"
             },
-            bpp/providers: [
+            "bpp/providers": [
               {
                 id: "provider-1",
                 descriptor: {
@@ -647,6 +651,164 @@ export async function registerRoutes(app: express.Express) {
     });
     return total;
   }
+  
+  // Customer Storefront API Routes
+  
+  // Categories API
+  router.get('/categories', (req: Request, res: Response) => {
+    try {
+      // Mock categories data (will be replaced with database access later)
+      const categories = [
+        { id: 1, name: 'Poultry', slug: 'poultry', imageUrl: 'https://placehold.co/100x100' },
+        { id: 2, name: 'Mutton', slug: 'mutton', imageUrl: 'https://placehold.co/100x100' },
+        { id: 3, name: 'Seafood', slug: 'seafood', imageUrl: 'https://placehold.co/100x100' },
+        { id: 4, name: 'Eggs', slug: 'eggs', imageUrl: 'https://placehold.co/100x100' }
+      ];
+      
+      res.json(categories);
+    } catch (error) {
+      console.error('Categories API error:', error);
+      res.status(500).json({ error: 'Failed to fetch categories' });
+    }
+  });
+  
+  // Products API
+  router.get('/products', (req: Request, res: Response) => {
+    try {
+      // Mock products data (will be replaced with database access later)
+      const products = [
+        {
+          id: '1',
+          name: 'Fresh Chicken Breast',
+          description: 'Boneless, Skinless, Antibiotic-free',
+          price: 299,
+          imageUrl: 'https://placehold.co/400x300',
+          categorySlug: 'poultry',
+          weight: '500g',
+          isAvailable: true,
+          isVeg: false,
+          isPopular: true
+        },
+        {
+          id: '2',
+          name: 'Mutton - Goat Curry Cut',
+          description: 'Fresh and tender meat',
+          price: 649,
+          imageUrl: 'https://placehold.co/400x300',
+          categorySlug: 'mutton',
+          weight: '500g',
+          isAvailable: true,
+          isVeg: false
+        },
+        {
+          id: '3',
+          name: 'Atlantic Salmon',
+          description: 'Premium fresh-water fish',
+          price: 799,
+          salePrice: 699,
+          imageUrl: 'https://placehold.co/400x300',
+          categorySlug: 'seafood',
+          weight: '300g',
+          isAvailable: true,
+          isVeg: false,
+          isPopular: true
+        },
+        {
+          id: '4',
+          name: 'Farm Fresh Eggs',
+          description: 'Pack of 6 eggs',
+          price: 99,
+          imageUrl: 'https://placehold.co/400x300',
+          categorySlug: 'eggs',
+          weight: '6 pieces',
+          isAvailable: true,
+          isVeg: false
+        }
+      ];
+      
+      // Filter by category if provided
+      const categorySlug = req.query.category as string | undefined;
+      const filteredProducts = categorySlug 
+        ? products.filter(product => product.categorySlug === categorySlug)
+        : products;
+        
+      res.json(filteredProducts);
+    } catch (error) {
+      console.error('Products API error:', error);
+      res.status(500).json({ error: 'Failed to fetch products' });
+    }
+  });
+  
+  // Kitchens API (delivery locations)
+  router.get('/kitchens', (req: Request, res: Response) => {
+    try {
+      // Mock kitchens data (will be replaced with database access later)
+      const kitchens = [
+        {
+          id: 1,
+          name: 'Central Kitchen',
+          area: 'Downtown',
+          city: 'Bangalore',
+          state: 'Karnataka',
+          latitude: 12.9716,
+          longitude: 77.5946,
+          isOpen: true,
+          openingTime: '08:00',
+          closingTime: '22:00'
+        },
+        {
+          id: 2,
+          name: 'North Kitchen',
+          area: 'Koramangala',
+          city: 'Bangalore',
+          state: 'Karnataka',
+          latitude: 12.9352,
+          longitude: 77.6245,
+          isOpen: true,
+          openingTime: '09:00',
+          closingTime: '23:00'
+        }
+      ];
+      
+      res.json(kitchens);
+    } catch (error) {
+      console.error('Kitchens API error:', error);
+      res.status(500).json({ error: 'Failed to fetch kitchens' });
+    }
+  });
+  
+  // Orders API
+  router.post('/orders', (req: Request, res: Response) => {
+    try {
+      const { items, deliveryAddress, paymentMethod } = req.body;
+      
+      if (!items || !items.length || !deliveryAddress || !paymentMethod) {
+        return res.status(400).json({
+          error: 'Invalid request format',
+          message: 'Required fields missing: items, deliveryAddress, paymentMethod'
+        });
+      }
+      
+      // In a real implementation, this would create an order in the database
+      // and possibly trigger an ONDC transaction
+      
+      const orderId = `order-${Date.now()}`;
+      
+      res.status(201).json({
+        id: orderId,
+        status: 'CREATED',
+        items,
+        deliveryAddress,
+        paymentMethod,
+        total: items.reduce((total: number, item: any) => 
+          total + ((item.salePrice || item.price) * item.quantity), 0),
+        createdAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Orders API error:', error);
+      res.status(500).json({ error: 'Failed to create order' });
+    }
+  });
 
   // Error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

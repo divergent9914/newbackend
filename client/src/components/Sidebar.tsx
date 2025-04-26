@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Menu, X, Home, Database, Github, BarChart3, Book, Server, ShoppingCart } from 'lucide-react';
+import { Menu, X, Home, Database, Github, BarChart3, Book, Server, ShoppingCart, Store } from 'lucide-react';
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -67,6 +67,17 @@ const Sidebar = () => {
 
         <nav className="sidebar-nav">
           <ul>
+            <li>
+              <Link href="/store">
+                <a 
+                  className={`sidebar-link ${location === '/store' ? 'active' : ''}`}
+                  onClick={closeSidebar}
+                >
+                  <Store size={18} />
+                  Customer Storefront
+                </a>
+              </Link>
+            </li>
             <li>
               <Link href="/">
                 <a 
