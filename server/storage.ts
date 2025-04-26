@@ -1,3 +1,5 @@
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import {
   User, InsertUser, users,
   Product, InsertProduct, products,
@@ -177,7 +179,7 @@ export class MemStorage implements IStorage {
 
   async createUser(user: InsertUser): Promise<User> {
     const id = this.userCurrentId++;
-    const newUser = { ...user, id };
+    const newUser = { ...user, id, role: user.role || 'user' };
     this.users.set(id, newUser);
     return newUser;
   }
@@ -193,7 +195,12 @@ export class MemStorage implements IStorage {
 
   async createProduct(product: InsertProduct): Promise<Product> {
     const id = this.productCurrentId++;
-    const newProduct = { ...product, id };
+    const newProduct = { 
+      ...product, 
+      id,
+      stock: product.stock || 0,
+      imageUrl: product.imageUrl || null
+    };
     this.products.set(id, newProduct);
     return newProduct;
   }
@@ -227,8 +234,10 @@ export class MemStorage implements IStorage {
     const newOrder = { 
       ...order, 
       id, 
+      status: order.status || 'pending',
       createdAt: now, 
-      updatedAt: now 
+      updatedAt: now,
+      ondcOrderId: order.ondcOrderId || null
     };
     this.orders.set(id, newOrder);
     return newOrder;
@@ -278,7 +287,9 @@ export class MemStorage implements IStorage {
     const newPayment = { 
       ...payment, 
       id, 
-      createdAt: new Date() 
+      status: payment.status || 'pending',
+      createdAt: new Date(),
+      transactionId: payment.transactionId || null
     };
     this.payments.set(id, newPayment);
     return newPayment;
@@ -316,7 +327,11 @@ export class MemStorage implements IStorage {
     const newDelivery = { 
       ...delivery, 
       id, 
-      updatedAt: new Date() 
+      status: delivery.status || 'pending',
+      updatedAt: new Date(),
+      trackingNumber: delivery.trackingNumber || null,
+      carrier: delivery.carrier || null,
+      estimatedDelivery: delivery.estimatedDelivery || null
     };
     this.deliveries.set(id, newDelivery);
     return newDelivery;
@@ -351,6 +366,8 @@ export class MemStorage implements IStorage {
     const newIntegration = { 
       ...integration, 
       id, 
+      status: integration.status || 'active',
+      complianceScore: integration.complianceScore || 100,
       lastSync: new Date() 
     };
     this.ondcIntegrations.set(id, newIntegration);
@@ -389,7 +406,12 @@ export class MemStorage implements IStorage {
     const id = this.serviceMetricCurrentId++;
     const newMetric = { 
       ...metric, 
-      id, 
+      id,
+      status: metric.status || 'healthy',
+      uptime: metric.uptime !== undefined ? metric.uptime : 100,
+      requestCount: metric.requestCount || 0,
+      errorRate: metric.errorRate || 0,
+      averageLatency: metric.averageLatency || 0,
       timestamp: new Date() 
     };
     this.serviceMetrics.set(id, newMetric);
@@ -421,7 +443,11 @@ export class MemStorage implements IStorage {
 
   async createApiRoute(route: InsertApiRoute): Promise<ApiRoute> {
     const id = this.apiRouteCurrentId++;
-    const newRoute = { ...route, id };
+    const newRoute = { 
+      ...route, 
+      id,
+      active: route.active !== undefined ? route.active : true
+    };
     this.apiRoutes.set(id, newRoute);
     return newRoute;
   }
@@ -437,4 +463,387 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database Storage implementation
+export class DatabaseStorage implements IStorage {
+  // User operations
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const userToInsert = {
+      ...insertUser,
+      role: insertUser.role || 'user'
+    };
+    const [user] = await db
+      .insert(users)
+      .values(userToInsert)
+      .returning();
+    return user;
+  }
+
+  // Product operations
+  async getProducts(): Promise<Product[]> {
+    return await db.select().from(products);
+  }
+
+  async getProduct(id: number): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product || undefined;
+  }
+
+  async createProduct(product: InsertProduct): Promise<Product> {
+    const productToInsert = {
+      ...product,
+      stock: product.stock || 0,
+      imageUrl: product.imageUrl || null
+    };
+    const [newProduct] = await db
+      .insert(products)
+      .values(productToInsert)
+      .returning();
+    return newProduct;
+  }
+
+  async updateProductStock(id: number, stock: number): Promise<Product | undefined> {
+    const [updatedProduct] = await db
+      .update(products)
+      .set({ stock })
+      .where(eq(products.id, id))
+      .returning();
+    return updatedProduct || undefined;
+  }
+
+  // Order operations
+  async getOrders(): Promise<Order[]> {
+    return await db.select().from(orders);
+  }
+
+  async getOrder(id: number): Promise<Order | undefined> {
+    const [order] = await db.select().from(orders).where(eq(orders.id, id));
+    return order || undefined;
+  }
+
+  async getOrdersByUserId(userId: number): Promise<Order[]> {
+    return await db.select().from(orders).where(eq(orders.userId, userId));
+  }
+
+  async createOrder(order: InsertOrder): Promise<Order> {
+    const now = new Date();
+    const orderToInsert = {
+      ...order,
+      status: order.status || 'pending',
+      createdAt: now,
+      updatedAt: now,
+      ondcOrderId: order.ondcOrderId || null
+    };
+    const [newOrder] = await db
+      .insert(orders)
+      .values(orderToInsert)
+      .returning();
+    return newOrder;
+  }
+
+  async updateOrderStatus(id: number, status: string): Promise<Order | undefined> {
+    const [updatedOrder] = await db
+      .update(orders)
+      .set({ 
+        status, 
+        updatedAt: new Date() 
+      })
+      .where(eq(orders.id, id))
+      .returning();
+    return updatedOrder || undefined;
+  }
+
+  // Order Items operations
+  async getOrderItems(orderId: number): Promise<OrderItem[]> {
+    return await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
+  }
+
+  async createOrderItem(orderItem: InsertOrderItem): Promise<OrderItem> {
+    const [newOrderItem] = await db
+      .insert(orderItems)
+      .values(orderItem)
+      .returning();
+    return newOrderItem;
+  }
+
+  // Payment operations
+  async getPayments(): Promise<Payment[]> {
+    return await db.select().from(payments);
+  }
+
+  async getPayment(id: number): Promise<Payment | undefined> {
+    const [payment] = await db.select().from(payments).where(eq(payments.id, id));
+    return payment || undefined;
+  }
+
+  async getPaymentByOrderId(orderId: number): Promise<Payment | undefined> {
+    const [payment] = await db.select().from(payments).where(eq(payments.orderId, orderId));
+    return payment || undefined;
+  }
+
+  async createPayment(payment: InsertPayment): Promise<Payment> {
+    const paymentToInsert = {
+      ...payment,
+      status: payment.status || 'pending',
+      createdAt: new Date(),
+      transactionId: payment.transactionId || null
+    };
+    const [newPayment] = await db
+      .insert(payments)
+      .values(paymentToInsert)
+      .returning();
+    return newPayment;
+  }
+
+  async updatePaymentStatus(id: number, status: string, transactionId?: string): Promise<Payment | undefined> {
+    let updateData: Partial<Payment> = { status };
+    
+    if (transactionId) {
+      updateData.transactionId = transactionId;
+    }
+    
+    const [updatedPayment] = await db
+      .update(payments)
+      .set(updateData)
+      .where(eq(payments.id, id))
+      .returning();
+    return updatedPayment || undefined;
+  }
+
+  // Delivery operations
+  async getDeliveries(): Promise<Delivery[]> {
+    return await db.select().from(deliveries);
+  }
+
+  async getDelivery(id: number): Promise<Delivery | undefined> {
+    const [delivery] = await db.select().from(deliveries).where(eq(deliveries.id, id));
+    return delivery || undefined;
+  }
+
+  async getDeliveryByOrderId(orderId: number): Promise<Delivery | undefined> {
+    const [delivery] = await db.select().from(deliveries).where(eq(deliveries.orderId, orderId));
+    return delivery || undefined;
+  }
+
+  async createDelivery(delivery: InsertDelivery): Promise<Delivery> {
+    const deliveryToInsert = {
+      ...delivery,
+      status: delivery.status || 'pending',
+      updatedAt: new Date(),
+      trackingNumber: delivery.trackingNumber || null,
+      carrier: delivery.carrier || null,
+      estimatedDelivery: delivery.estimatedDelivery || null
+    };
+    const [newDelivery] = await db
+      .insert(deliveries)
+      .values(deliveryToInsert)
+      .returning();
+    return newDelivery;
+  }
+
+  async updateDeliveryStatus(id: number, status: string, trackingNumber?: string): Promise<Delivery | undefined> {
+    let updateData: Partial<Delivery> = { 
+      status, 
+      updatedAt: new Date() 
+    };
+    
+    if (trackingNumber) {
+      updateData.trackingNumber = trackingNumber;
+    }
+    
+    const [updatedDelivery] = await db
+      .update(deliveries)
+      .set(updateData)
+      .where(eq(deliveries.id, id))
+      .returning();
+    return updatedDelivery || undefined;
+  }
+
+  // ONDC operations
+  async getOndcIntegrations(): Promise<OndcIntegration[]> {
+    return await db.select().from(ondcIntegration);
+  }
+
+  async getOndcIntegration(id: number): Promise<OndcIntegration | undefined> {
+    const [integration] = await db.select().from(ondcIntegration).where(eq(ondcIntegration.id, id));
+    return integration || undefined;
+  }
+
+  async createOndcIntegration(integration: InsertOndcIntegration): Promise<OndcIntegration> {
+    const integrationToInsert = {
+      ...integration,
+      status: integration.status || 'active',
+      complianceScore: integration.complianceScore || 100,
+      lastSync: new Date()
+    };
+    const [newIntegration] = await db
+      .insert(ondcIntegration)
+      .values(integrationToInsert)
+      .returning();
+    return newIntegration;
+  }
+
+  async updateOndcIntegrationStatus(id: number, status: string): Promise<OndcIntegration | undefined> {
+    const [updatedIntegration] = await db
+      .update(ondcIntegration)
+      .set({ 
+        status, 
+        lastSync: new Date() 
+      })
+      .where(eq(ondcIntegration.id, id))
+      .returning();
+    return updatedIntegration || undefined;
+  }
+
+  // Service metrics operations
+  async getServiceMetrics(): Promise<ServiceMetric[]> {
+    return await db.select().from(serviceMetrics);
+  }
+
+  async getServiceMetric(id: number): Promise<ServiceMetric | undefined> {
+    const [metric] = await db.select().from(serviceMetrics).where(eq(serviceMetrics.id, id));
+    return metric || undefined;
+  }
+
+  async getServiceMetricsByName(serviceName: string): Promise<ServiceMetric[]> {
+    return await db.select().from(serviceMetrics).where(eq(serviceMetrics.serviceName, serviceName));
+  }
+
+  async createServiceMetric(metric: InsertServiceMetric): Promise<ServiceMetric> {
+    const metricToInsert = {
+      ...metric,
+      status: metric.status || 'healthy',
+      uptime: metric.uptime !== undefined ? metric.uptime : 100,
+      requestCount: metric.requestCount || 0,
+      errorRate: metric.errorRate || 0,
+      averageLatency: metric.averageLatency || 0,
+      timestamp: new Date()
+    };
+    const [newMetric] = await db
+      .insert(serviceMetrics)
+      .values(metricToInsert)
+      .returning();
+    return newMetric;
+  }
+
+  async updateServiceMetric(id: number, updates: Partial<InsertServiceMetric>): Promise<ServiceMetric | undefined> {
+    const [updatedMetric] = await db
+      .update(serviceMetrics)
+      .set({ 
+        ...updates, 
+        timestamp: new Date() 
+      })
+      .where(eq(serviceMetrics.id, id))
+      .returning();
+    return updatedMetric || undefined;
+  }
+
+  // API Gateway routes operations
+  async getApiRoutes(): Promise<ApiRoute[]> {
+    return await db.select().from(apiRoutes);
+  }
+
+  async getApiRoute(id: number): Promise<ApiRoute | undefined> {
+    const [route] = await db.select().from(apiRoutes).where(eq(apiRoutes.id, id));
+    return route || undefined;
+  }
+
+  async createApiRoute(route: InsertApiRoute): Promise<ApiRoute> {
+    const routeToInsert = {
+      ...route,
+      active: route.active !== undefined ? route.active : true
+    };
+    const [newRoute] = await db
+      .insert(apiRoutes)
+      .values(routeToInsert)
+      .returning();
+    return newRoute;
+  }
+
+  async updateApiRoute(id: number, active: boolean): Promise<ApiRoute | undefined> {
+    const [updatedRoute] = await db
+      .update(apiRoutes)
+      .set({ active })
+      .where(eq(apiRoutes.id, id))
+      .returning();
+    return updatedRoute || undefined;
+  }
+}
+
+// Initialize the database with default data
+async function initializeDefaultData() {
+  const dbStorage = new DatabaseStorage();
+  
+  // Initialize API routes
+  const routes = await dbStorage.getApiRoutes();
+  if (routes.length === 0) {
+    const defaultRoutes: InsertApiRoute[] = [
+      { path: '/api/v1/orders', method: 'GET', service: 'Order Service', active: true },
+      { path: '/api/v1/orders', method: 'POST', service: 'Order Service', active: true },
+      { path: '/api/v1/orders/{id}', method: 'GET', service: 'Order Service', active: true },
+      { path: '/api/v1/orders/{id}', method: 'PUT', service: 'Order Service', active: true },
+      { path: '/api/v1/inventory', method: 'GET', service: 'Inventory Service', active: true },
+      { path: '/api/v1/inventory/{id}', method: 'GET', service: 'Inventory Service', active: true },
+      { path: '/api/v1/inventory/{id}', method: 'PUT', service: 'Inventory Service', active: true },
+      { path: '/api/v1/inventory/batch', method: 'POST', service: 'Inventory Service', active: true },
+      { path: '/api/v1/payments', method: 'POST', service: 'Payment Service', active: true },
+      { path: '/api/v1/payments/{id}', method: 'GET', service: 'Payment Service', active: true },
+      { path: '/api/v1/payments/{id}', method: 'DELETE', service: 'Payment Service', active: true },
+      { path: '/api/v1/payments/status/{id}', method: 'GET', service: 'Payment Service', active: true },
+      { path: '/api/v1/delivery', method: 'POST', service: 'Delivery Service', active: true },
+      { path: '/api/v1/delivery/{id}', method: 'GET', service: 'Delivery Service', active: true },
+      { path: '/api/v1/delivery/{id}/status', method: 'PUT', service: 'Delivery Service', active: true },
+      { path: '/api/v1/delivery/tracking/{id}', method: 'GET', service: 'Delivery Service', active: true },
+    ];
+
+    for (const route of defaultRoutes) {
+      await dbStorage.createApiRoute(route);
+    }
+  }
+
+  // Initialize ONDC integrations
+  const integrations = await dbStorage.getOndcIntegrations();
+  if (integrations.length === 0) {
+    const defaultOndcIntegrations: InsertOndcIntegration[] = [
+      { endpoint: '/search', type: 'Buyer', mappedService: 'Inventory', status: 'active', complianceScore: 100 },
+      { endpoint: '/select', type: 'Buyer', mappedService: 'Order', status: 'active', complianceScore: 100 },
+      { endpoint: '/init', type: 'Buyer', mappedService: 'Order', status: 'active', complianceScore: 100 },
+      { endpoint: '/confirm', type: 'Buyer', mappedService: 'Payment', status: 'slow', complianceScore: 86 },
+      { endpoint: '/status', type: 'Buyer/Seller', mappedService: 'Delivery', status: 'active', complianceScore: 100 },
+    ];
+
+    for (const integration of defaultOndcIntegrations) {
+      await dbStorage.createOndcIntegration(integration);
+    }
+  }
+
+  // Initialize service metrics
+  const metrics = await dbStorage.getServiceMetrics();
+  if (metrics.length === 0) {
+    const defaultServiceMetrics: InsertServiceMetric[] = [
+      { serviceName: 'API Gateway', status: 'healthy', uptime: 100, requestCount: 324, errorRate: 0, averageLatency: 20 },
+      { serviceName: 'Order Service', status: 'healthy', uptime: 100, requestCount: 156, errorRate: 0, averageLatency: 45 },
+      { serviceName: 'Inventory Service', status: 'healthy', uptime: 100, requestCount: 89, errorRate: 0, averageLatency: 38 },
+      { serviceName: 'Payment Service', status: 'warning', uptime: 97.5, requestCount: 67, errorRate: 2.5, averageLatency: 230 },
+      { serviceName: 'Delivery Service', status: 'healthy', uptime: 100, requestCount: 42, errorRate: 0, averageLatency: 52 },
+    ];
+
+    for (const metric of defaultServiceMetrics) {
+      await dbStorage.createServiceMetric(metric);
+    }
+  }
+}
+
+// Initialize the database and create a storage instance
+export const storage = new DatabaseStorage();
+// Run initialization in the background
+initializeDefaultData().catch(console.error);

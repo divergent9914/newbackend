@@ -150,14 +150,13 @@ const GitHubLoader: React.FC = () => {
   // Import repository to current project mutation
   const importMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('/api/integrations/github/import', {
-        method: 'POST',
-        body: JSON.stringify({
+      return await apiRequest('/api/integrations/github/import', 
+        JSON.stringify({
           owner,
           repo,
           path: path || '/'
         })
-      });
+      );
     },
     onSuccess: () => {
       toast({
