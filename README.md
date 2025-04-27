@@ -59,7 +59,7 @@ The backend is composed of the following microservices:
 - **User Service**: Authentication and user management
 - **Product Service**: Catalog and inventory management
 - **Order Service**: Order processing and management
-- **Payment Service**: Stripe integration for payments
+- **Payment Service**: Razorpay integration for payments
 - **Delivery Service**: GPS tracking and delivery management
 - **ONDC Service**: ONDC protocol integration
 
