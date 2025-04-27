@@ -1,5 +1,7 @@
-// This script is used to start the ONDC E-commerce application
-// It starts both the server and client components
+// Start server in main process
+require('./server/index');
 
-console.log('Starting ONDC E-commerce Application...');
-require('./start.js');
+// Start client in background via child process
+const { execSync } = require('child_process');
+console.log('Starting client...');
+execSync('cd client && npx vite --host 0.0.0.0', { stdio: 'inherit' });

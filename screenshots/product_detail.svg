@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="600" fill="#0f1218"/>
+  
+  <!-- Header -->
+  <rect width="800" height="70" fill="#1a1a2e"/>
+  <text x="30" y="45" font-family="Arial" font-size="24" fill="#ffffff">Foodie ONDC</text>
+  <text x="680" y="45" font-family="Arial" font-size="18" fill="#4ade80">Cart (3)</text>
+  
+  <!-- Back Button -->
+  <rect x="20" y="90" width="100" height="40" rx="8" fill="#24243c"/>
+  <text x="45" y="115" font-family="Arial" font-size="16" fill="#ffffff">← Back</text>
+  
+  <!-- Product Image -->
+  <rect x="20" y="150" width="400" height="300" rx="8" fill="#24243c"/>
+  
+  <!-- Product Details -->
+  <text x="440" y="170" font-family="Arial" font-size="28" font-weight="bold" fill="#ffffff">Butter Chicken</text>
+  <rect x="440" y="185" width="60" height="25" rx="12" fill="#4ade80" fill-opacity="0.2"/>
+  <text x="450" y="203" font-family="Arial" font-size="14" fill="#4ade80">Veg</text>
+  
+  <!-- Rating -->
+  <text x="520" y="203" font-family="Arial" font-size="14" fill="#f97316">★★★★☆ 4.5</text>
+  
+  <!-- Price -->
+  <text x="440" y="240" font-family="Arial" font-size="24" font-weight="bold" fill="#4ade80">$12.99</text>
+  
+  <!-- Description -->
+  <text x="440" y="280" font-family="Arial" font-size="16" fill="#ffffff">Description</text>
+  <rect x="440" y="290" width="340" height="2" fill="#333355"/>
+  <text x="440" y="320" font-family="Arial" font-size="14" fill="#aaaaaa" width="340">
+    <tspan x="440" dy="0">A classic North Indian dish made with tender chicken</tspan>
+    <tspan x="440" dy="20">cooked in a creamy tomato-based curry. Flavored with</tspan>
+    <tspan x="440" dy="20">aromatic spices and finished with butter and cream.</tspan>
+  </text>
+  
+  <!-- Nutrition Information -->
+  <text x="440" y="390" font-family="Arial" font-size="16" fill="#ffffff">Nutrition Information</text>
+  <rect x="440" y="400" width="340" height="2" fill="#333355"/>
+  <text x="440" y="425" font-family="Arial" font-size="14" fill="#aaaaaa">Calories: 320 kcal</text>
+  <text x="440" y="450" font-family="Arial" font-size="14" fill="#aaaaaa">Protein: 22g | Carbs: 15g | Fat: 18g</text>
+  
+  <!-- Weight -->
+  <text x="440" y="490" font-family="Arial" font-size="16" fill="#ffffff">Weight: 300g</text>
+  
+  <!-- Ingredients -->
+  <text x="440" y="530" font-family="Arial" font-size="16" fill="#ffffff">Ingredients</text>
+  <rect x="440" y="540" width="340" height="2" fill="#333355"/>
+  <text x="440" y="560" font-family="Arial" font-size="14" fill="#aaaaaa">Chicken, Tomatoes, Butter, Cream, Spices, Ginger, Garlic</text>
+  
+  <!-- Add to Cart -->
+  <rect x="440" y="580" width="180" height="50" rx="8" fill="#646cff"/>
+  <text x="470" y="613" font-family="Arial" font-size="18" font-weight="bold" fill="#ffffff">Add to Cart</text>
+  
+  <!-- Quantity Selector -->
+  <rect x="640" y="580" width="140" height="50" rx="8" fill="#24243c"/>
+  <text x="660" y="613" font-family="Arial" font-size="18" fill="#ffffff">- 1 +</text>
+</svg>

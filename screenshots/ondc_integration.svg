@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="600" fill="#0f1218"/>
+  
+  <!-- Sidebar -->
+  <rect x="0" y="0" width="200" height="600" fill="#1a1a2e"/>
+  <text x="20" y="40" font-family="Arial" font-size="20" font-weight="bold" fill="#ffffff">ONDC Admin</text>
+  <line x1="20" y1="60" x2="180" y2="60" stroke="#333355" stroke-width="2"/>
+  
+  <!-- Sidebar Menu Items -->
+  <text x="20" y="105" font-family="Arial" font-size="14" fill="#aaaaaa">Dashboard</text>
+  <text x="20" y="145" font-family="Arial" font-size="14" fill="#aaaaaa">Products</text>
+  <text x="20" y="185" font-family="Arial" font-size="14" fill="#aaaaaa">Orders</text>
+  <text x="20" y="225" font-family="Arial" font-size="14" fill="#aaaaaa">GitHub Loader</text>
+  <text x="20" y="265" font-family="Arial" font-size="14" fill="#aaaaaa">Supabase Import</text>
+  <rect x="0" y="285" width="200" height="40" fill="#646cff"/>
+  <text x="20" y="305" font-family="Arial" font-size="14" font-weight="bold" fill="#ffffff">ONDC Integration</text>
+  <text x="20" y="345" font-family="Arial" font-size="14" fill="#aaaaaa">API Gateway</text>
+  <text x="20" y="385" font-family="Arial" font-size="14" fill="#aaaaaa">Monitoring</text>
+  <text x="20" y="425" font-family="Arial" font-size="14" fill="#aaaaaa">Documentation</text>
+  <text x="20" y="465" font-family="Arial" font-size="14" fill="#aaaaaa">Settings</text>
+  
+  <!-- Main Content Area -->
+  <text x="220" y="50" font-family="Arial" font-size="24" font-weight="bold" fill="#ffffff">ONDC Protocol Integration</text>
+  
+  <!-- Configuration Card -->
+  <rect x="220" y="70" width="560" height="180" rx="8" fill="#24243c"/>
+  <text x="240" y="100" font-family="Arial" font-size="18" font-weight="bold" fill="#ffffff">Network Configuration</text>
+  
+  <!-- Configuration Fields -->
+  <text x="240" y="130" font-family="Arial" font-size="14" fill="#aaaaaa">Subscriber ID</text>
+  <rect x="360" y="115" width="400" height="30" rx="4" fill="#333355"/>
+  <text x="370" y="135" font-family="Arial" font-size="14" fill="#ffffff">example-subscriber-123456</text>
+  
+  <text x="240" y="170" font-family="Arial" font-size="14" fill="#aaaaaa">Registry URL</text>
+  <rect x="360" y="155" width="400" height="30" rx="4" fill="#333355"/>
+  <text x="370" y="175" font-family="Arial" font-size="14" fill="#ffffff">https://registry.ondc.org/api/v1</text>
+  
+  <text x="240" y="210" font-family="Arial" font-size="14" fill="#aaaaaa">Domain</text>
+  <rect x="360" y="195" width="400" height="30" rx="4" fill="#333355"/>
+  <text x="370" y="215" font-family="Arial" font-size="14" fill="#ffffff">nic2004:52110</text>
+  
+  <!-- Protocol Testing Card -->
+  <rect x="220" y="270" width="560" height="310" rx="8" fill="#24243c"/>
+  <text x="240" y="300" font-family="Arial" font-size="18" font-weight="bold" fill="#ffffff">Protocol Testing</text>
+  
+  <!-- Tabs -->
+  <rect x="240" y="320" width="100" height="30" rx="4" fill="#646cff"/>
+  <text x="260" y="340" font-family="Arial" font-size="14" fill="#ffffff">Search</text>
+  <rect x="350" y="320" width="100" height="30" rx="4" fill="#333355"/>
+  <text x="370" y="340" font-family="Arial" font-size="14" fill="#aaaaaa">Select</text>
+  <rect x="460" y="320" width="100" height="30" rx="4" fill="#333355"/>
+  <text x="490" y="340" font-family="Arial" font-size="14" fill="#aaaaaa">Init</text>
+  <rect x="570" y="320" width="100" height="30" rx="4" fill="#333355"/>
+  <text x="590" y="340" font-family="Arial" font-size="14" fill="#aaaaaa">Confirm</text>
+  
+  <!-- Request JSON -->
+  <rect x="240" y="360" width="260" height="200" rx="4" fill="#1a1a2e"/>
+  <text x="250" y="380" font-family="Arial" font-size="14" fill="#ffffff">Request</text>
+  <text x="250" y="400" font-family="monospace" font-size="12" fill="#aaaaaa">{</text>
+  <text x="260" y="420" font-family="monospace" font-size="12" fill="#aaaaaa">"context": {</text>
+  <text x="270" y="440" font-family="monospace" font-size="12" fill="#aaaaaa">"domain": "nic2004:52110",</text>
+  <text x="270" y="460" font-family="monospace" font-size="12" fill="#aaaaaa">"action": "search",</text>
+  <text x="270" y="480" font-family="monospace" font-size="12" fill="#aaaaaa">"bap_id": "example.com",</text>
+  <text x="270" y="500" font-family="monospace" font-size="12" fill="#aaaaaa">"transaction_id": "abc123"</text>
+  <text x="260" y="520" font-family="monospace" font-size="12" fill="#aaaaaa">},</text>
+  <text x="260" y="540" font-family="monospace" font-size="12" fill="#aaaaaa">"message": {...}</text>
+  <text x="250" y="560" font-family="monospace" font-size="12" fill="#aaaaaa">}</text>
+  
+  <!-- Response JSON -->
+  <rect x="520" y="360" width="260" height="200" rx="4" fill="#1a1a2e"/>
+  <text x="530" y="380" font-family="Arial" font-size="14" fill="#ffffff">Response</text>
+  <text x="530" y="400" font-family="monospace" font-size="12" fill="#4ade80">{</text>
+  <text x="540" y="420" font-family="monospace" font-size="12" fill="#4ade80">"context": {</text>
+  <text x="550" y="440" font-family="monospace" font-size="12" fill="#4ade80">"domain": "nic2004:52110",</text>
+  <text x="550" y="460" font-family="monospace" font-size="12" fill="#4ade80">"action": "on_search",</text>
+  <text x="550" y="480" font-family="monospace" font-size="12" fill="#4ade80">"bpp_id": "example.com",</text>
+  <text x="550" y="500" font-family="monospace" font-size="12" fill="#4ade80">"transaction_id": "abc123"</text>
+  <text x="540" y="520" font-family="monospace" font-size="12" fill="#4ade80">},</text>
+  <text x="540" y="540" font-family="monospace" font-size="12" fill="#4ade80">"message": {...}</text>
+  <text x="530" y="560" font-family="monospace" font-size="12" fill="#4ade80">}</text>
+  
+  <!-- Test Button -->
+  <rect x="240" y="570" width="150" height="40" rx="8" fill="#646cff"/>
+  <text x="278" y="595" font-family="Arial" font-size="14" font-weight="bold" fill="#ffffff">Run Test</text>
+  
+  <!-- Status -->
+  <rect x="410" y="570" width="370" height="40" rx="8" fill="#4ade80" fill-opacity="0.2"/>
+  <text x="430" y="595" font-family="Arial" font-size="14" fill="#4ade80">Last Test: Success (200 OK) - 2 seconds ago</text>
+</svg>
