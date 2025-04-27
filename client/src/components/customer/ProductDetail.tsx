@@ -1,177 +1,211 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Star, Minus, Plus, ShoppingBag, Heart, Share2 } from 'lucide-react';
-import { useCartStore, type Product } from '@/lib/store';
-import { formatCurrency } from '@/lib/utils';
+import { useCartStore } from '@/lib/store';
+import { Button } from '@/components/ui/button';
+import { Loader2, Minus, Plus, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Link, useLocation } from 'wouter';
 
 interface ProductDetailProps {
   productId: string;
 }
 
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl?: string;
+  categorySlug?: string;
+  isVeg?: boolean;
+  isAvailable?: boolean;
+  salePrice?: number;
+  weight?: string;
+  ingredients?: string;
+  nutritionInfo?: string;
+}
+
 export default function ProductDetail({ productId }: ProductDetailProps) {
   const [quantity, setQuantity] = useState(1);
-  const { addToCart } = useCartStore();
+  const { addItem } = useCartStore();
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
   
-  // Fetch product details from API
-  const { data: product, isLoading, isError } = useQuery({
+  // Fetch product details
+  const { data: product, isLoading, error } = useQuery({
     queryKey: ['/api/products', productId],
     queryFn: async () => {
       const response = await fetch(`/api/products/${productId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch product');
       }
-      return response.json() as Promise<Product>;
+      return response.json();
     }
   });
   
-  const handleAddToCart = () => {
-    if (product) {
-      addToCart(product, quantity);
-      // Show a toast or confirmation
-      alert(`${quantity} × ${product.name} added to cart!`);
-      setQuantity(1);
+  const handleQuantityChange = (change: number) => {
+    const newQuantity = quantity + change;
+    if (newQuantity >= 1) {
+      setQuantity(newQuantity);
     }
   };
   
-  const handleQuantityChange = (value: number) => {
-    if (value < 1) return;
-    setQuantity(value);
+  const handleAddToCart = () => {
+    if (!product) return;
+    
+    addItem({
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      image: product.imageUrl
+    });
+    
+    toast({
+      title: "Added to cart",
+      description: `${quantity} x ${product.name} has been added to your cart`,
+      variant: "success"
+    });
+    
+    // Reset quantity after adding to cart
+    setQuantity(1);
   };
   
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row gap-8 animate-pulse">
-          <div className="md:w-1/2 h-96 bg-gray-200 rounded-lg"></div>
-          <div className="md:w-1/2 space-y-4">
-            <div className="h-8 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-full"></div>
-            <div className="h-4 bg-gray-200 rounded w-full"></div>
-            <div className="h-10 bg-gray-200 rounded w-1/3 mt-8"></div>
-          </div>
-        </div>
+      <div className="container mx-auto px-4 py-16 flex justify-center">
+        <Loader2 className="animate-spin h-12 w-12 text-primary" />
       </div>
     );
   }
   
-  if (isError || !product) {
+  if (error || !product) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center p-8 border rounded-lg bg-red-50 text-red-600">
-          <h3 className="text-lg font-medium mb-2">Product not found</h3>
-          <p>We couldn't find the product you're looking for.</p>
-        </div>
+      <div className="container mx-auto px-4 py-16 text-center">
+        <ShoppingBag className="mx-auto h-20 w-20 text-gray-300 mb-6" />
+        <h1 className="text-2xl font-bold mb-4">Product Not Found</h1>
+        <p className="text-gray-600 mb-6">
+          We couldn't find the product you're looking for. It might have been removed or is no longer available.
+        </p>
+        <Button asChild>
+          <Link href="/store">Continue Shopping</Link>
+        </Button>
       </div>
     );
   }
   
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col md:flex-row gap-8">
+      {/* Back button */}
+      <Button 
+        variant="ghost" 
+        className="mb-6 text-gray-600 hover:text-primary" 
+        onClick={() => navigate("/store")}
+      >
+        <ArrowLeft size={16} className="mr-2" />
+        Back to Products
+      </Button>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
         {/* Product Image */}
-        <div className="md:w-1/2">
-          <div className="border rounded-lg overflow-hidden bg-white">
+        <div className="bg-gray-100 rounded-xl overflow-hidden h-96">
+          {product.imageUrl ? (
             <img 
               src={product.imageUrl} 
               alt={product.name} 
-              className="w-full h-96 object-contain"
+              className="w-full h-full object-contain"
             />
-          </div>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gray-200">
+              <ShoppingBag size={64} className="text-gray-400" />
+            </div>
+          )}
         </div>
         
         {/* Product Info */}
-        <div className="md:w-1/2">
-          <div className="mb-2 flex items-center">
-            <span className={`px-2 py-1 text-xs font-medium rounded ${product.isVeg ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-              {product.isVeg ? 'Vegetarian' : 'Non-Vegetarian'}
-            </span>
-            {product.isPopular && (
-              <span className="ml-2 px-2 py-1 text-xs font-medium rounded bg-yellow-100 text-yellow-800">
-                Popular
+        <div>
+          <div className="flex items-start justify-between mb-2">
+            <h1 className="text-3xl font-bold">{product.name}</h1>
+            {product.isVeg && (
+              <span className="inline-block bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full">
+                Vegetarian
               </span>
             )}
           </div>
           
-          <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
+          <div className="text-2xl font-bold mb-4 text-primary">
+            ₹{product.price.toFixed(2)}
+            {product.salePrice && (
+              <span className="ml-3 text-base line-through text-gray-400">
+                ₹{product.salePrice.toFixed(2)}
+              </span>
+            )}
+          </div>
           
-          <div className="flex items-center mb-4">
+          {product.weight && (
+            <p className="text-sm text-gray-500 mb-4">Weight: {product.weight}</p>
+          )}
+          
+          <p className="text-gray-700 mb-6">{product.description}</p>
+          
+          {/* Quantity selector */}
+          <div className="mb-6">
+            <p className="font-medium mb-2">Quantity</p>
             <div className="flex items-center">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star 
-                  key={star} 
-                  className="h-4 w-4"
-                  fill={star <= 4 ? "currentColor" : "none"} 
-                  color={star <= 4 ? "#FFB800" : "#E5E7EB"} 
-                />
-              ))}
-            </div>
-            <span className="ml-2 text-sm text-gray-500">
-              (24 reviews)
-            </span>
-          </div>
-          
-          <div className="mb-4">
-            <p className="text-xl font-bold">
-              {product.salePrice ? (
-                <>
-                  <span>{formatCurrency(product.salePrice / 100)}</span>
-                  <span className="ml-2 text-gray-500 line-through text-base">
-                    {formatCurrency(product.price / 100)}
-                  </span>
-                </>
-              ) : (
-                <span>{formatCurrency(product.price / 100)}</span>
-              )}
-            </p>
-            <p className="text-sm text-gray-500">{product.weight}</p>
-          </div>
-          
-          <div className="border-t border-b py-4 mb-4">
-            <p className="text-gray-700 mb-4">{product.description}</p>
-          </div>
-          
-          <div className="flex items-center mb-6">
-            <div className="flex items-center border rounded-md mr-4">
-              <button
-                onClick={() => handleQuantityChange(quantity - 1)}
-                className="px-3 py-2 hover:bg-gray-100"
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={() => handleQuantityChange(-1)}
                 disabled={quantity <= 1}
               >
-                <Minus className="h-4 w-4" />
-              </button>
-              <span className="px-3 text-lg font-medium">{quantity}</span>
-              <button
-                onClick={() => handleQuantityChange(quantity + 1)}
-                className="px-3 py-2 hover:bg-gray-100"
+                <Minus size={16} />
+              </Button>
+              <span className="w-16 text-center font-medium text-lg">{quantity}</span>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={() => handleQuantityChange(1)}
               >
-                <Plus className="h-4 w-4" />
-              </button>
+                <Plus size={16} />
+              </Button>
             </div>
-            
-            <button
-              onClick={handleAddToCart}
-              className="flex-1 bg-primary text-white font-medium py-2 px-6 rounded-md hover:bg-primary/90 transition flex items-center justify-center gap-2"
-            >
-              <ShoppingBag className="h-5 w-5" />
-              <span>Add to Cart</span>
-            </button>
           </div>
           
-          <div className="flex items-center text-gray-500 space-x-4">
-            <button className="flex items-center gap-1 hover:text-primary transition">
-              <Heart className="h-4 w-4" />
-              <span className="text-sm">Save</span>
-            </button>
-            <button className="flex items-center gap-1 hover:text-primary transition">
-              <Share2 className="h-4 w-4" />
-              <span className="text-sm">Share</span>
-            </button>
-          </div>
+          {/* Add to cart button */}
+          <Button 
+            size="lg" 
+            className="w-full md:w-auto px-8"
+            disabled={!product.isAvailable}
+            onClick={handleAddToCart}
+          >
+            {product.isAvailable 
+              ? `Add to Cart • ₹${(product.price * quantity).toFixed(2)}`
+              : 'Out of Stock'
+            }
+          </Button>
+          
+          {/* Product details accordion */}
+          {(product.ingredients || product.nutritionInfo) && (
+            <div className="mt-10 border-t pt-6">
+              <h2 className="text-xl font-bold mb-4">Product Details</h2>
+              
+              {product.ingredients && (
+                <div className="mb-4">
+                  <h3 className="font-medium mb-2">Ingredients</h3>
+                  <p className="text-gray-700">{product.ingredients}</p>
+                </div>
+              )}
+              
+              {product.nutritionInfo && (
+                <div>
+                  <h3 className="font-medium mb-2">Nutrition Information</h3>
+                  <p className="text-gray-700">{product.nutritionInfo}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
-      
-      {/* Related Products or Product Details Tabs can be added here */}
     </div>
   );
 }

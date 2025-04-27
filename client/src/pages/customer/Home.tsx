@@ -1,158 +1,184 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import ProductGrid from '@/components/customer/ProductGrid';
+import { useCartStore } from '@/lib/store';
+import { Button } from '@/components/ui/button';
+import { Loader2, ShoppingBag } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Link } from 'wouter';
 
-// Mock categories - will be replaced with API data later
-
-// Mock data for categories
-const MOCK_CATEGORIES = [
-  { id: 1, name: 'Poultry', slug: 'poultry', imageUrl: 'https://placehold.co/100x100' },
-  { id: 2, name: 'Mutton', slug: 'mutton', imageUrl: 'https://placehold.co/100x100' },
-  { id: 3, name: 'Seafood', slug: 'seafood', imageUrl: 'https://placehold.co/100x100' },
-  { id: 4, name: 'Eggs', slug: 'eggs', imageUrl: 'https://placehold.co/100x100' }
-];
+// Define a basic Product interface for internal use
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl?: string;
+  categorySlug?: string;
+  isVeg?: boolean;
+  isAvailable?: boolean;
+  salePrice?: number;
+}
 
 export default function Home() {
+  const { addItem } = useCartStore();
+  const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
-  // Categories query - using mock data for now
-  // Will connect to backend API later
-  
-  // Fetch categories - using mock data for now
-  const { data: categories } = useQuery({
-    queryKey: ['/api/categories'],
-    queryFn: () => Promise.resolve(MOCK_CATEGORIES)
+  // Fetch all products
+  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
+    queryKey: ['/api/products'],
   });
   
-  // This filtering is now handled by the ProductGrid component
+  // Fetch categories (can be extracted from products or fetched separately)
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<{name: string, slug: string}[]>({
+    queryKey: ['/api/categories'],
+  });
+  
+  // Function to add product to cart
+  const handleAddToCart = (product: Product) => {
+    addItem({
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      image: product.imageUrl
+    });
+    
+    toast({
+      title: "Added to cart",
+      description: `${product.name} has been added to your cart`,
+      variant: "success"
+    });
+  };
+  
+  // Filter products by selected category
+  const filteredProducts = selectedCategory
+    ? products.filter((product) => product.categorySlug === selectedCategory)
+    : products;
   
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Hero Section */}
-      <div className="relative mb-8 rounded-lg overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary to-blue-600 opacity-90"></div>
-        <div className="relative py-16 px-8 text-white z-10">
-          <h1 className="text-3xl md:text-5xl font-bold mb-4">Premium Quality Meat & Seafood</h1>
-          <p className="text-lg md:text-xl mb-6 max-w-xl">Farm-fresh products delivered to your doorstep through the ONDC network</p>
-          <button className="px-6 py-3 bg-white text-primary font-semibold rounded-md hover:bg-gray-100 transition">
-            Shop Now
-          </button>
+      {/* Hero Banner */}
+      <div className="bg-gradient-to-r from-primary to-primary-600 rounded-xl p-8 mb-10 text-white">
+        <div className="max-w-2xl">
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">
+            Fresh meals delivered to your doorstep
+          </h1>
+          <p className="text-lg mb-6 opacity-90">
+            Discover delicious food from local kitchens through India's open network for digital commerce.
+          </p>
+          <Button size="lg" variant="secondary" asChild>
+            <Link href="/store/kitchens">
+              Explore Kitchens
+            </Link>
+          </Button>
         </div>
       </div>
       
-      {/* Categories Section */}
-      {categories && categories.length > 0 && (
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold mb-6">Categories</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {categories.map((category) => (
-              <div 
-                key={category.id}
-                className={`border rounded-lg p-6 cursor-pointer transition hover:shadow-md ${
-                  selectedCategory === category.slug ? 'border-primary bg-primary/5' : ''
-                }`}
-                onClick={() => setSelectedCategory(
-                  selectedCategory === category.slug ? null : category.slug
-                )}
+      {/* Categories */}
+      {categoriesLoading ? (
+        <div className="flex justify-center my-8">
+          <Loader2 className="animate-spin h-8 w-8 text-primary" />
+        </div>
+      ) : (
+        <div className="mb-10">
+          <h2 className="text-2xl font-bold mb-4">Categories</h2>
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              variant={selectedCategory === null ? "default" : "outline"} 
+              onClick={() => setSelectedCategory(null)}
+              className="mb-2"
+            >
+              All
+            </Button>
+            
+            {categories?.map((category: any) => (
+              <Button 
+                key={category.slug} 
+                variant={selectedCategory === category.slug ? "default" : "outline"}
+                onClick={() => setSelectedCategory(category.slug)}
+                className="mb-2"
               >
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                    <img 
-                      src={category.imageUrl}
-                      alt={category.name}
-                      className="h-8 w-8 object-contain"
-                    />
-                  </div>
-                  <h3 className="font-medium">{category.name}</h3>
-                </div>
-              </div>
+                {category.name}
+              </Button>
             ))}
           </div>
         </div>
       )}
       
-      {/* Products Section */}
-      <div className="mb-12">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">
-            {selectedCategory 
-              ? `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Products` 
-              : 'Featured Products'}
-          </h2>
-          
-          {selectedCategory && (
-            <button 
-              onClick={() => setSelectedCategory(null)}
-              className="text-sm text-primary hover:underline"
-            >
-              View All
-            </button>
-          )}
-        </div>
-        
-        <ProductGrid categorySlug={selectedCategory} />
-      </div>
+      {/* Products Grid */}
+      <h2 className="text-2xl font-bold mb-6">
+        {selectedCategory ? `${selectedCategory} Items` : 'All Items'}
+      </h2>
       
-      {/* Features Section */}
-      <div className="mb-12 bg-gray-50 rounded-lg p-8">
-        <h2 className="text-2xl font-bold mb-8 text-center">Why Choose Us</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="text-center">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 mx-auto">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Premium Quality</h3>
-            <p className="text-gray-600">Farm-fresh produce sourced directly from verified farmers and suppliers on the ONDC network</p>
-          </div>
-          
-          <div className="text-center">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 mx-auto">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Quick Delivery</h3>
-            <p className="text-gray-600">Express delivery through our network of delivery partners connected through ONDC</p>
-          </div>
-          
-          <div className="text-center">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 mx-auto">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Best Prices</h3>
-            <p className="text-gray-600">Competitive prices with no middlemen markup thanks to direct ONDC integration</p>
-          </div>
+      {productsLoading ? (
+        <div className="flex justify-center my-10">
+          <Loader2 className="animate-spin h-10 w-10 text-primary" />
         </div>
-      </div>
-      
-      {/* ONDC Integration Highlight */}
-      <div className="mb-12 border rounded-lg p-8">
-        <div className="flex flex-col md:flex-row items-center gap-8">
-          <div className="md:w-1/2">
-            <h2 className="text-2xl font-bold mb-4">Powered by ONDC</h2>
-            <p className="text-gray-600 mb-4">
-              We're proud to be integrated with the Open Network for Digital Commerce (ONDC), 
-              India's revolutionary initiative to democratize digital commerce.
-            </p>
-            <p className="text-gray-600 mb-6">
-              Through ONDC, we connect directly with suppliers, logistics partners, and payment 
-              gateways to provide you with a seamless shopping experience while supporting local businesses.
-            </p>
-            <button className="px-6 py-2 bg-primary text-white font-medium rounded hover:bg-primary/90 transition">
-              Learn More
-            </button>
-          </div>
-          <div className="md:w-1/2 flex justify-center">
-            <div className="w-64 h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-              <span className="text-gray-400">ONDC Logo</span>
-            </div>
-          </div>
+      ) : filteredProducts?.length === 0 ? (
+        <div className="text-center py-10">
+          <ShoppingBag className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+          <h3 className="text-xl font-medium mb-2">No products found</h3>
+          <p className="text-gray-500 mb-6">
+            We couldn't find any products in this category.
+          </p>
+          <Button onClick={() => setSelectedCategory(null)}>
+            View All Products
+          </Button>
         </div>
-      </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {filteredProducts?.map((product: Product) => (
+            <div key={product.id} className="bg-white rounded-lg overflow-hidden shadow-md border border-gray-100 transition-all hover:shadow-lg">
+              {product.imageUrl && (
+                <Link href={`/store/product/${product.id}`}>
+                  <a className="block h-48 overflow-hidden">
+                    <img 
+                      src={product.imageUrl} 
+                      alt={product.name}
+                      className="w-full h-full object-cover transition-transform hover:scale-105"
+                    />
+                  </a>
+                </Link>
+              )}
+              
+              <div className="p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <Link href={`/store/product/${product.id}`}>
+                    <a className="block">
+                      <h3 className="font-medium text-gray-900 hover:text-primary">{product.name}</h3>
+                    </a>
+                  </Link>
+                  {product.isVeg && (
+                    <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Veg</span>
+                  )}
+                </div>
+                
+                <p className="text-gray-500 text-sm mb-3 line-clamp-2">{product.description}</p>
+                
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-lg">
+                    ₹{product.price.toFixed(2)}
+                    {product.salePrice && (
+                      <span className="ml-2 text-sm line-through text-gray-400">
+                        ₹{product.salePrice.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleAddToCart(product)}
+                    disabled={!product.isAvailable}
+                  >
+                    {product.isAvailable ? 'Add' : 'Sold Out'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

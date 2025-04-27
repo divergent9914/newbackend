@@ -17,6 +17,7 @@ export interface ApiRequestOptions {
   headers?: HeadersInit
 }
 
+// Original function that automatically parses JSON responses
 export async function apiRequest<T = any>(
   url: string,
   options: ApiRequestOptions = {},
@@ -69,4 +70,24 @@ export async function apiRequest<T = any>(
 
     return text as unknown as T
   }
+}
+
+// Lower-level API request that returns the raw response
+export async function apiRequestRaw(
+  method: string,
+  url: string,
+  body?: any
+): Promise<Response> {
+  const requestOptions: RequestInit = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  };
+
+  if (body) {
+    requestOptions.body = JSON.stringify(body);
+  }
+
+  return fetch(url, requestOptions);
 }

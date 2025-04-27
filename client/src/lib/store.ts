@@ -1,86 +1,75 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useEffect, useState } from 'react';
 
-// Product type
-export interface Product {
-  id: string;
+// Simplified cart item directly matching our UI needs
+export interface CartItem {
+  id: number;
+  productId?: number; // For order API compatibility
   name: string;
   description: string;
   price: number;
   salePrice?: number;
-  imageUrl: string;
-  categorySlug: string;
-  weight: string;
-  isAvailable: boolean;
-  isVeg: boolean;
-  isPopular?: boolean;
-}
-
-// Cart item type
-export interface CartItem {
-  product: Product;
   quantity: number;
+  imageUrl?: string;
+  categorySlug?: string;
 }
-
-// UI State for controlling modals, cart, etc.
-interface UIState {
-  isCartOpen: boolean;
-  toggleCart: () => void;
-}
-
-export const useUIStore = create<UIState>((set) => ({
-  isCartOpen: false,
-  toggleCart: () => set((state) => ({ isCartOpen: !state.isCartOpen })),
-}));
 
 // Cart State
 interface CartState {
+  isOpen: boolean;
   items: CartItem[];
-  addItem: (product: Product) => void;
-  addToCart: (product: Product, quantity?: number) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  removeItem: (productId: string) => void;
-  removeFromCart: (productId: string, quantity?: number) => void;
+  toggleCart: () => void;
+  addItem: (item: Omit<CartItem, 'quantity'>) => void;
+  updateQuantity: (id: number, quantity: number) => void;
+  removeItem: (id: number) => void;
   clearCart: () => void;
-  getTotalItems: () => number;
-  getTotalPrice: () => number;
+}
+
+// Extended cart state with calculated values
+interface CartStateExtended extends CartState {
+  itemCount: number;
+  subtotal: number;
 }
 
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
+      isOpen: false,
       items: [],
       
-      // Add a product to cart
-      addItem: (product: Product) => {
+      // Toggle cart visibility
+      toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
+      
+      // Add an item to cart
+      addItem: (item) => {
         const { items } = get();
-        const existingItem = items.find(item => item.product.id === product.id);
+        const existingItem = items.find(i => i.id === item.id);
         
         if (existingItem) {
           // If item already exists, increase quantity
           set({
-            items: items.map(item => 
-              item.product.id === product.id
-                ? { ...item, quantity: item.quantity + 1 }
-                : item
+            items: items.map(i => 
+              i.id === item.id
+                ? { ...i, quantity: i.quantity + 1 }
+                : i
             )
           });
         } else {
           // Otherwise add new item
-          set({ items: [...items, { product, quantity: 1 }] });
+          set({ 
+            items: [...items, { ...item, quantity: 1 }],
+            isOpen: true // Open the cart when adding a new item
+          });
         }
       },
       
       // Update quantity of an item
-      updateQuantity: (productId: string, quantity: number) => {
+      updateQuantity: (id: number, quantity: number) => {
         const { items } = get();
-        if (quantity < 1) {
-          return;
-        }
-        
         set({
           items: items.map(item => 
-            item.product.id === productId
+            item.id === id
               ? { ...item, quantity }
               : item
           )
@@ -88,77 +77,75 @@ export const useCartStore = create<CartState>()(
       },
       
       // Remove an item from cart
-      removeItem: (productId: string) => {
+      removeItem: (id: number) => {
         const { items } = get();
         set({
-          items: items.filter(item => item.product.id !== productId)
+          items: items.filter(item => item.id !== id)
         });
-      },
-      
-      // Add to cart with optional quantity
-      addToCart: (product: Product, quantity: number = 1) => {
-        const { items } = get();
-        const existingItem = items.find(item => item.product.id === product.id);
-        
-        if (existingItem) {
-          // If item already exists, increase quantity by specified amount
-          set({
-            items: items.map(item => 
-              item.product.id === product.id
-                ? { ...item, quantity: item.quantity + quantity }
-                : item
-            )
-          });
-        } else {
-          // Otherwise add new item with the specified quantity
-          set({ items: [...items, { product, quantity }] });
-        }
-      },
-      
-      // Remove from cart with optional quantity
-      removeFromCart: (productId: string, quantity: number = 1) => {
-        const { items } = get();
-        const existingItem = items.find(item => item.product.id === productId);
-        
-        if (!existingItem) return;
-        
-        // If quantity to remove is greater than or equal to item quantity, remove completely
-        if (existingItem.quantity <= quantity) {
-          set({
-            items: items.filter(item => item.product.id !== productId)
-          });
-        } else {
-          // Otherwise decrease the quantity
-          set({
-            items: items.map(item => 
-              item.product.id === productId
-                ? { ...item, quantity: item.quantity - quantity }
-                : item
-            )
-          });
-        }
       },
       
       // Clear all items from cart
       clearCart: () => set({ items: [] }),
-      
-      // Get total number of items
-      getTotalItems: () => {
-        const { items } = get();
-        return items.reduce((total, item) => total + item.quantity, 0);
-      },
-      
-      // Get total price
-      getTotalPrice: () => {
-        const { items } = get();
-        return items.reduce((total, item) => {
-          const price = item.product.salePrice || item.product.price;
-          return total + (price * item.quantity);
-        }, 0);
-      }
     }),
     {
       name: 'ondc-cart-storage',
     }
   )
 );
+
+// User types and state
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+}
+
+interface UserState {
+  user: User | null;
+  isAuthenticated: boolean;
+  login: (user: User) => void;
+  logout: () => void;
+}
+
+export const useUserStore = create<UserState>()(
+  persist(
+    (set) => ({
+      user: null,
+      isAuthenticated: false,
+      login: (user) => set({ user, isAuthenticated: true }),
+      logout: () => set({ user: null, isAuthenticated: false }),
+    }),
+    {
+      name: 'ondc-user-storage',
+    }
+  )
+);
+
+// Custom hook to access cart state with computed values
+export function useCart(): CartStateExtended {
+  const cart = useCartStore();
+  const [cartState, setCartState] = useState<CartStateExtended>({
+    ...cart,
+    itemCount: 0,
+    subtotal: 0
+  });
+
+  useEffect(() => {
+    // Calculate derived values
+    const itemCount = cart.items.reduce((count, item) => count + item.quantity, 0);
+    
+    const subtotal = cart.items.reduce((total, item) => {
+      const itemPrice = item.salePrice || item.price;
+      return total + (itemPrice * item.quantity);
+    }, 0);
+    
+    setCartState({
+      ...cart,
+      itemCount,
+      subtotal
+    });
+  }, [cart, cart.items]);
+
+  return cartState;
+}

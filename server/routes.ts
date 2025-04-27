@@ -87,7 +87,35 @@ export async function registerRoutes(app: any) {
         return res.status(404).json({ error: 'Product not found' });
       }
       
-      res.json(product);
+      // Get category slug from categoryId (in real application should use a category lookup)
+      const categoryMap: Record<number, string> = {
+        1: 'main-course',
+        2: 'starters',
+        3: 'desserts',
+        4: 'beverages'
+      };
+      const categorySlug = product.categoryId ? categoryMap[product.categoryId] || 'uncategorized' : 'uncategorized';
+      
+      // Transform product for frontend with the needed fields
+      const transformedProduct = {
+        ...product,
+        // Add placeholder image if none exists
+        imageUrl: product.imageUrl || `https://picsum.photos/seed/${product.id}/600/400`,
+        // Default to true if stock > 0, or if stock is null
+        isAvailable: product.stock === null ? true : product.stock > 0,
+        // Add category slug
+        categorySlug,
+        // Add additional fields needed by frontend
+        isVeg: product.id % 2 === 0, // Just for demo purposes, alternate products
+        weight: product.sku ? `${(product.id * 100) % 1000}g` : null, // Example weight based on id
+        // Ensure price is a number
+        price: typeof product.price === 'string' ? parseFloat(product.price) : product.price,
+        // Additional details for product page
+        ingredients: "Water, Whole Grain Wheat Flour, Enriched Flour, Vegetable Oil, Cane Sugar, Leavening, Salt",
+        nutritionInfo: "Calories: 120, Fat: 3g, Sodium: 160mg, Carbs: 22g, Protein: 3g"
+      };
+      
+      res.json(transformedProduct);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to fetch product' });
@@ -916,14 +944,15 @@ export async function registerRoutes(app: any) {
   // Customer Storefront API Routes
   
   // Categories API
-  router.get('/categories', (req: Request, res: Response) => {
+  router.get('/categories', async (req: Request, res: Response) => {
     try {
-      // Mock categories data (will be replaced with database access later)
+      // Return default categories since our product schema doesn't have categorySlug
+      // In a real implementation, we would retrieve these from the database
       const categories = [
-        { id: 1, name: 'Poultry', slug: 'poultry', imageUrl: 'https://placehold.co/100x100' },
-        { id: 2, name: 'Mutton', slug: 'mutton', imageUrl: 'https://placehold.co/100x100' },
-        { id: 3, name: 'Seafood', slug: 'seafood', imageUrl: 'https://placehold.co/100x100' },
-        { id: 4, name: 'Eggs', slug: 'eggs', imageUrl: 'https://placehold.co/100x100' }
+        { name: 'Main Course', slug: 'main-course' },
+        { name: 'Starters', slug: 'starters' },
+        { name: 'Desserts', slug: 'desserts' },
+        { name: 'Beverages', slug: 'beverages' }
       ];
       
       res.json(categories);
@@ -934,65 +963,44 @@ export async function registerRoutes(app: any) {
   });
   
   // Products API
-  router.get('/products', (req: Request, res: Response) => {
+  router.get('/products', async (req: Request, res: Response) => {
     try {
-      // Mock products data (will be replaced with database access later)
-      const products = [
-        {
-          id: '1',
-          name: 'Fresh Chicken Breast',
-          description: 'Boneless, Skinless, Antibiotic-free',
-          price: 299,
-          imageUrl: 'https://placehold.co/400x300',
-          categorySlug: 'poultry',
-          weight: '500g',
-          isAvailable: true,
-          isVeg: false,
-          isPopular: true
-        },
-        {
-          id: '2',
-          name: 'Mutton - Goat Curry Cut',
-          description: 'Fresh and tender meat',
-          price: 649,
-          imageUrl: 'https://placehold.co/400x300',
-          categorySlug: 'mutton',
-          weight: '500g',
-          isAvailable: true,
-          isVeg: false
-        },
-        {
-          id: '3',
-          name: 'Atlantic Salmon',
-          description: 'Premium fresh-water fish',
-          price: 799,
-          salePrice: 699,
-          imageUrl: 'https://placehold.co/400x300',
-          categorySlug: 'seafood',
-          weight: '300g',
-          isAvailable: true,
-          isVeg: false,
-          isPopular: true
-        },
-        {
-          id: '4',
-          name: 'Farm Fresh Eggs',
-          description: 'Pack of 6 eggs',
-          price: 99,
-          imageUrl: 'https://placehold.co/400x300',
-          categorySlug: 'eggs',
-          weight: '6 pieces',
-          isAvailable: true,
-          isVeg: false
-        }
-      ];
+      // Get products from database
+      const products = await storage.getProducts();
+      
+      // Transform products for frontend to match the expected format
+      const transformedProducts = products.map(product => {
+        // Get category slug from categoryId (in real application should use a category lookup)
+        const categoryMap: Record<number, string> = {
+          1: 'main-course',
+          2: 'starters',
+          3: 'desserts',
+          4: 'beverages'
+        };
+        const categorySlug = product.categoryId ? categoryMap[product.categoryId] || 'uncategorized' : 'uncategorized';
+        
+        return {
+          ...product,
+          // Add placeholder image if none exists
+          imageUrl: product.imageUrl || `https://picsum.photos/seed/${product.id}/400/300`,
+          // Default to true if stock > 0, or if stock is null
+          isAvailable: product.stock === null ? true : product.stock > 0,
+          // Add category slug
+          categorySlug,
+          // Add additional fields needed by frontend
+          isVeg: product.id % 2 === 0, // Just for demo purposes, alternate products
+          weight: product.sku ? `${(product.id * 100) % 1000}g` : null, // Example weight based on id
+          // Ensure price is a number
+          price: typeof product.price === 'string' ? parseFloat(product.price) : product.price
+        };
+      });
       
       // Filter by category if provided
       const categorySlug = req.query.category as string | undefined;
       const filteredProducts = categorySlug 
-        ? products.filter(product => product.categorySlug === categorySlug)
-        : products;
-        
+        ? transformedProducts.filter(product => product.categorySlug === categorySlug)
+        : transformedProducts;
+      
       res.json(filteredProducts);
     } catch (error) {
       console.error('Products API error:', error);
@@ -1038,33 +1046,87 @@ export async function registerRoutes(app: any) {
     }
   });
   
-  // Orders API
-  router.post('/orders', (req: Request, res: Response) => {
+  // Orders API for customer storefront
+  router.post('/orders', async (req: Request, res: Response) => {
     try {
-      const { items, deliveryAddress, paymentMethod } = req.body;
+      const { items, subtotal, deliveryFee, total } = req.body;
       
-      if (!items || !items.length || !deliveryAddress || !paymentMethod) {
+      if (!items || !items.length) {
         return res.status(400).json({
           error: 'Invalid request format',
-          message: 'Required fields missing: items, deliveryAddress, paymentMethod'
+          message: 'No items provided in order'
         });
       }
       
-      // In a real implementation, this would create an order in the database
-      // and possibly trigger an ONDC transaction
+      // In a real implementation with authentication, we would get the userId from the session
+      // For now, use a demo user ID
+      const userId = 1; // Demo user ID
       
-      const orderId = `order-${Date.now()}`;
-      
-      res.status(201).json({
-        id: orderId,
+      // Create the order in the database
+      const orderData = {
+        userId: userId,
         status: 'CREATED',
-        items,
-        deliveryAddress,
-        paymentMethod,
-        total: items.reduce((total: number, item: any) => 
-          total + ((item.salePrice || item.price) * item.quantity), 0),
-        createdAt: new Date().toISOString()
-      });
+        totalAmount: total || subtotal + (deliveryFee || 0),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      try {
+        // Create the order
+        const newOrder = await storage.createOrder(orderData);
+        
+        // Create order items
+        for (const item of items) {
+          await storage.createOrderItem({
+            orderId: newOrder.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: item.price
+          });
+        }
+        
+        // Create mock delivery entry
+        const deliveryData = {
+          orderId: newOrder.id,
+          status: 'PENDING',
+          address: 'Demo Address, Customer Location',
+          trackingNumber: `TR-${Date.now()}`,
+          estimatedDelivery: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+        };
+        
+        const delivery = await storage.createDelivery(deliveryData);
+        
+        // Create payment record
+        const paymentData = {
+          orderId: newOrder.id,
+          amount: total || subtotal + (deliveryFee || 0),
+          status: 'PENDING',
+          method: 'CARD',
+          transactionId: `TXN-${Date.now()}`,
+          createdAt: new Date()
+        };
+        
+        const payment = await storage.createPayment(paymentData);
+        
+        // Return the complete order with items, delivery and payment info
+        res.status(201).json({
+          ...newOrder,
+          items: items.map(item => ({
+            productId: item.productId,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity
+          })),
+          delivery,
+          payment,
+          subtotal,
+          deliveryFee,
+          total
+        });
+      } catch (error) {
+        console.error('Order creation error:', error);
+        throw new Error('Failed to store order in database');
+      }
     } catch (error) {
       console.error('Orders API error:', error);
       res.status(500).json({ error: 'Failed to create order' });

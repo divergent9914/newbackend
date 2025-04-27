@@ -47,7 +47,8 @@ The application follows a client-server architecture:
 │   └── schema.ts          # Database schema definitions
 ├── GitHubLoader/          # Reference code for UI/UX and ONDC integration
 ├── drizzle.config.ts      # Drizzle ORM configuration
-└── start.js               # Application startup script
+├── start.js               # Simple application startup script
+└── run-app.js             # Enhanced application startup script with better output
 ```
 
 ## Database Schema
@@ -96,12 +97,18 @@ SUPABASE_API_KEY=your-supabase-api-key
 To start both client and server components:
 
 ```bash
-node start.js
+node run-app.js
 ```
 
 This will start:
 - Backend server on port 3001
 - Frontend development server on port 5173
+
+Alternatively, you can also use:
+
+```bash
+node start.js
+```
 
 ### Database Migrations
 
@@ -164,7 +171,7 @@ The current implementation includes:
 
 Next steps for development:
 
-- Set up proper Replit workflow for continuous running
+- ✅ Created simple startup scripts for easy running (`run-app.js`)
 - Implement client-side components for product browsing and ordering
 - Complete the ONDC protocol integration in the admin panel
 - Add authentication and user management features
