@@ -6,7 +6,17 @@ type NextFunction = any;
 import { storage } from './storage';
 import { supabase, testSupabaseConnection } from './supabase';
 import { testConnection } from './db';
-import { loginSchema, serviceInsertSchema, apiKeyInsertSchema } from '../shared/schema';
+import { 
+  loginSchema, 
+  productInsertSchema, 
+  orderInsertSchema, 
+  orderItemInsertSchema,
+  paymentInsertSchema,
+  deliveryInsertSchema,
+  apiRouteInsertSchema,
+  ondcIntegrationInsertSchema,
+  serviceMetricInsertSchema
+} from '../shared/schema';
 import { z } from 'zod';
 
 export async function registerRoutes(app: any) {
@@ -56,107 +66,199 @@ export async function registerRoutes(app: any) {
     }
   });
 
-  // Services API
-  router.get('/services', async (req: Request, res: Response) => {
+  // Products API
+  router.get('/products', async (req: Request, res: Response) => {
     try {
-      const services = await storage.getServices();
-      res.json(services);
+      const products = await storage.getProducts();
+      res.json(products);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Failed to fetch services' });
+      res.status(500).json({ error: 'Failed to fetch products' });
     }
   });
 
-  router.get('/services/:id', async (req: Request, res: Response) => {
+  router.get('/products/:id', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      const service = await storage.getService(id);
+      const product = await storage.getProduct(id);
       
-      if (!service) {
-        return res.status(404).json({ error: 'Service not found' });
+      if (!product) {
+        return res.status(404).json({ error: 'Product not found' });
       }
       
-      res.json(service);
+      res.json(product);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Failed to fetch service' });
+      res.status(500).json({ error: 'Failed to fetch product' });
     }
   });
 
-  router.post('/services', async (req: Request, res: Response) => {
+  router.post('/products', async (req: Request, res: Response) => {
     try {
-      const serviceData = serviceInsertSchema.parse(req.body);
-      const newService = await storage.createService(serviceData);
-      res.status(201).json(newService);
+      const productData = productInsertSchema.parse(req.body);
+      const newProduct = await storage.createProduct(productData);
+      res.status(201).json(newProduct);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
       console.error(error);
-      res.status(500).json({ error: 'Failed to create service' });
+      res.status(500).json({ error: 'Failed to create product' });
     }
   });
 
-  router.put('/services/:id', async (req: Request, res: Response) => {
+  router.put('/products/:id', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      const serviceData = serviceInsertSchema.partial().parse(req.body);
+      const productData = productInsertSchema.partial().parse(req.body);
       
-      const updatedService = await storage.updateService(id, serviceData);
+      const updatedProduct = await storage.updateProduct(id, productData);
       
-      if (!updatedService) {
-        return res.status(404).json({ error: 'Service not found' });
+      if (!updatedProduct) {
+        return res.status(404).json({ error: 'Product not found' });
       }
       
-      res.json(updatedService);
+      res.json(updatedProduct);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
       console.error(error);
-      res.status(500).json({ error: 'Failed to update service' });
+      res.status(500).json({ error: 'Failed to update product' });
     }
   });
 
-  router.delete('/services/:id', async (req: Request, res: Response) => {
+  router.delete('/products/:id', async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      const deleted = await storage.deleteService(id);
+      const deleted = await storage.deleteProduct(id);
       
       if (!deleted) {
-        return res.status(404).json({ error: 'Service not found' });
+        return res.status(404).json({ error: 'Product not found' });
       }
       
       res.status(204).end();
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Failed to delete service' });
+      res.status(500).json({ error: 'Failed to delete product' });
     }
   });
 
-  // API Keys routes
-  router.get('/apikeys/service/:serviceId', async (req: Request, res: Response) => {
+  // Orders API
+  router.get('/orders', async (req: Request, res: Response) => {
     try {
-      const serviceId = parseInt(req.params.serviceId);
-      const keys = await storage.getApiKeysByService(serviceId);
-      res.json(keys);
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
+      
+      if (userId) {
+        const orders = await storage.getOrdersByUser(userId);
+        return res.json(orders);
+      } else {
+        // For admin endpoints, you would return all orders
+        return res.status(400).json({ error: 'userId parameter is required' });
+      }
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Failed to fetch API keys' });
+      res.status(500).json({ error: 'Failed to fetch orders' });
     }
   });
 
-  router.post('/apikeys', async (req: Request, res: Response) => {
+  router.get('/orders/:id', async (req: Request, res: Response) => {
     try {
-      const keyData = apiKeyInsertSchema.parse(req.body);
-      const newKey = await storage.createApiKey(keyData);
-      res.status(201).json(newKey);
+      const id = parseInt(req.params.id);
+      const order = await storage.getOrder(id);
+      
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      
+      // Get order items
+      const items = await storage.getOrderItems(id);
+      
+      res.json({
+        ...order,
+        items
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to fetch order' });
+    }
+  });
+
+  router.post('/orders', async (req: Request, res: Response) => {
+    try {
+      const { order, items } = req.body;
+      
+      // Validate order data
+      const orderData = orderInsertSchema.parse(order);
+      
+      // Create the order
+      const newOrder = await storage.createOrder(orderData);
+      
+      // Process order items if provided
+      if (Array.isArray(items) && items.length > 0) {
+        for (const item of items) {
+          await storage.createOrderItem({
+            orderId: newOrder.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice
+          });
+        }
+      }
+      
+      res.status(201).json(newOrder);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
       console.error(error);
-      res.status(500).json({ error: 'Failed to create API key' });
+      res.status(500).json({ error: 'Failed to create order' });
+    }
+  });
+
+  router.put('/orders/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const orderData = orderInsertSchema.partial().parse(req.body);
+      
+      const updatedOrder = await storage.updateOrder(id, orderData);
+      
+      if (!updatedOrder) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      
+      res.json(updatedOrder);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error(error);
+      res.status(500).json({ error: 'Failed to update order' });
+    }
+  });
+
+  // API Routes management for ONDC integration
+  router.get('/api-routes', async (req: Request, res: Response) => {
+    try {
+      const routes = await storage.getApiRoutes();
+      res.json(routes);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to fetch API routes' });
+    }
+  });
+
+  router.post('/api-routes', async (req: Request, res: Response) => {
+    try {
+      const routeData = apiRouteInsertSchema.parse(req.body);
+      const newRoute = await storage.createApiRoute(routeData);
+      res.status(201).json(newRoute);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error(error);
+      res.status(500).json({ error: 'Failed to create API route' });
     }
   });
 
@@ -234,7 +336,94 @@ export async function registerRoutes(app: any) {
   });
 
   // ONDC Integration routes
-  // Sample implementation of ONDC protocol endpoints
+  // Integration routes for ONDC protocol management
+  router.get('/ondc/integrations', async (req: Request, res: Response) => {
+    try {
+      const integrations = await storage.getOndcIntegrations();
+      res.json(integrations);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to fetch ONDC integrations' });
+    }
+  });
+
+  router.get('/ondc/integrations/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const integration = await storage.getOndcIntegration(id);
+      
+      if (!integration) {
+        return res.status(404).json({ error: 'ONDC integration not found' });
+      }
+      
+      res.json(integration);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to fetch ONDC integration' });
+    }
+  });
+
+  router.post('/ondc/integrations', async (req: Request, res: Response) => {
+    try {
+      const integrationData = ondcIntegrationInsertSchema.parse(req.body);
+      const newIntegration = await storage.createOndcIntegration(integrationData);
+      res.status(201).json(newIntegration);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error(error);
+      res.status(500).json({ error: 'Failed to create ONDC integration' });
+    }
+  });
+
+  router.put('/ondc/integrations/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const integrationData = ondcIntegrationInsertSchema.partial().parse(req.body);
+      
+      const updatedIntegration = await storage.updateOndcIntegration(id, integrationData);
+      
+      if (!updatedIntegration) {
+        return res.status(404).json({ error: 'ONDC integration not found' });
+      }
+      
+      res.json(updatedIntegration);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error(error);
+      res.status(500).json({ error: 'Failed to update ONDC integration' });
+    }
+  });
+
+  // Service Metrics routes for monitoring
+  router.get('/service-metrics', async (req: Request, res: Response) => {
+    try {
+      const metrics = await storage.getServiceMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to fetch service metrics' });
+    }
+  });
+
+  router.post('/service-metrics', async (req: Request, res: Response) => {
+    try {
+      const metricData = serviceMetricInsertSchema.parse(req.body);
+      const newMetric = await storage.createServiceMetric(metricData);
+      res.status(201).json(newMetric);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error(error);
+      res.status(500).json({ error: 'Failed to create service metric' });
+    }
+  });
+  
+  // ONDC Protocol Implementation endpoints
   router.post('/ondc/search', (req: Request, res: Response) => {
     try {
       const { context, message } = req.body;
@@ -486,7 +675,7 @@ export async function registerRoutes(app: any) {
     }
   });
 
-  router.post('/ondc/confirm', (req: Request, res: Response) => {
+  router.post('/ondc/confirm', async (req: Request, res: Response) => {
     try {
       const { context, message } = req.body;
 
@@ -500,9 +689,26 @@ export async function registerRoutes(app: any) {
 
       // Log the confirm request
       console.log('ONDC confirm request:', JSON.stringify(req.body, null, 2));
-
-      // Generate order ID
-      const orderId = `order-${Date.now()}`;
+      
+      // Extract order information
+      const orderData = {
+        userId: 1, // In a real implementation, this would come from a logged-in user
+        address: message.order.billing?.address?.door || 'Default Address',
+        paymentMethod: message.order.payment?.type || 'ON-ORDER'
+      };
+      
+      // Extract items
+      const items = message.order.items.map((item: any) => ({
+        productId: parseInt(item.id),
+        quantity: item.quantity?.selected?.count || 1,
+        unitPrice: parseFloat(item.price?.value || "0")
+      }));
+      
+      // Create order in our system using the ONDC helper
+      const newOrder = await createOndcOrder(orderData, items);
+      
+      // Generate ONDC order ID
+      const ondcOrderId = newOrder.ondcOrderId || `ondc-${Date.now()}`;
 
       // Sample response for confirm
       res.json({
@@ -514,7 +720,7 @@ export async function registerRoutes(app: any) {
         },
         message: {
           order: {
-            id: orderId,
+            id: ondcOrderId,
             status: "CREATED",
             provider: {
               id: "provider-1",
@@ -642,6 +848,60 @@ export async function registerRoutes(app: any) {
   });
 
   // Helper function for ONDC endpoints
+  // Helper functions for ONDC protocol integration
+  async function createOndcOrder(orderData: any, items: any[]): Promise<any> {
+    try {
+      // Create a new order in our system
+      const newOrder = await storage.createOrder({
+        status: 'CREATED',
+        userId: orderData.userId,
+        totalAmount: calculateTotal(items),
+        ondcOrderId: `ondc-${Date.now()}`
+      });
+      
+      // Create order items
+      for (const item of items) {
+        await storage.createOrderItem({
+          orderId: newOrder.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice
+        });
+      }
+      
+      // Create delivery record
+      await storage.createDelivery({
+        orderId: newOrder.id,
+        status: 'PENDING',
+        address: orderData.address
+      });
+      
+      // Create payment record
+      await storage.createPayment({
+        orderId: newOrder.id,
+        amount: newOrder.totalAmount,
+        status: 'PENDING',
+        method: orderData.paymentMethod || 'CASH_ON_DELIVERY'
+      });
+      
+      // Log ONDC order creation
+      const metric = await storage.createServiceMetric({
+        serviceName: 'ondc-order-service',
+        status: 'ACTIVE',
+        requestCount: 1,
+        errorRate: 0.0,
+        averageLatency: 0.0
+      });
+      
+      console.log(`ONDC Order created with ID: ${newOrder.id}, Metric ID: ${metric.id}`);
+      
+      return newOrder;
+    } catch (error) {
+      console.error('Error creating ONDC order:', error);
+      throw error;
+    }
+  }
+  
   function calculateTotal(items: any[]): number {
     let total = 0;
     items.forEach(item => {
