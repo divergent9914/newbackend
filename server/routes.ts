@@ -6,6 +6,7 @@ type NextFunction = any;
 import { storage } from './storage';
 import { supabase, testSupabaseConnection } from './supabase';
 import { testConnection } from './db';
+import { Server as SocketIOServer } from 'socket.io';
 import { 
   loginSchema, 
   productInsertSchema, 
@@ -16,12 +17,79 @@ import {
   apiRouteInsertSchema,
   ondcIntegrationInsertSchema,
   serviceMetricInsertSchema,
+  deliveryLocationHistoryInsertSchema,
   Order
 } from '../shared/schema';
 import { z } from 'zod';
 
-export async function registerRoutes(app: any) {
+export async function registerRoutes(app: any, io?: SocketIOServer) {
   const router = Router();
+  
+  // Set up WebSocket connection handlers if io is provided
+  if (io) {
+    io.on('connection', (socket) => {
+      console.log('New client connected');
+      
+      // Join a delivery tracking room for a specific order
+      socket.on('joinDeliveryTracking', (deliveryId: number) => {
+        socket.join(`delivery:${deliveryId}`);
+        console.log(`Client joined delivery tracking for delivery ID: ${deliveryId}`);
+      });
+      
+      // Handle delivery agent location updates
+      socket.on('updateDeliveryLocation', async (data: { 
+        deliveryId: number, 
+        latitude: string, 
+        longitude: string,
+        speed?: number,
+        heading?: number,
+        accuracy?: number,
+        batteryLevel?: number,
+        metadata?: any
+      }) => {
+        try {
+          // Save location to history
+          const locationHistory = await storage.createDeliveryLocationHistory({
+            deliveryId: data.deliveryId,
+            latitude: data.latitude,
+            longitude: data.longitude,
+            speed: data.speed,
+            heading: data.heading,
+            accuracy: data.accuracy,
+            batteryLevel: data.batteryLevel,
+            metadata: data.metadata
+          });
+          
+          // Update current location in delivery
+          await storage.updateDelivery(data.deliveryId, {
+            currentLat: data.latitude,
+            currentLng: data.longitude,
+            lastLocationUpdateTime: new Date()
+          });
+          
+          // Broadcast to all clients tracking this delivery
+          io.to(`delivery:${data.deliveryId}`).emit('deliveryLocationUpdated', {
+            deliveryId: data.deliveryId,
+            location: {
+              lat: data.latitude,
+              lng: data.longitude
+            },
+            timestamp: locationHistory.timestamp,
+            speed: data.speed,
+            heading: data.heading
+          });
+          
+        } catch (error) {
+          console.error('Error updating delivery location:', error);
+        }
+      });
+      
+      // Handle disconnect
+      socket.on('disconnect', () => {
+        console.log('Client disconnected');
+      });
+    });
+  }
 
   // Status endpoint
   router.get('/status', async (req: Request, res: Response) => {
@@ -1133,6 +1201,125 @@ export async function registerRoutes(app: any) {
     }
   });
 
+  // Delivery tracking endpoints
+  router.get('/delivery/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const delivery = await storage.getDelivery(id);
+      
+      if (!delivery) {
+        return res.status(404).json({ error: 'Delivery not found' });
+      }
+      
+      // Get associated order
+      const order = await storage.getOrder(delivery.orderId);
+      
+      // Get delivery location history
+      const locationHistory = await storage.getDeliveryLocationHistory(id);
+      
+      res.json({
+        ...delivery,
+        order,
+        locationHistory
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to fetch delivery tracking information' });
+    }
+  });
+  
+  router.post('/delivery/:id/location', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { latitude, longitude, speed, heading, accuracy, batteryLevel, metadata } = req.body;
+      
+      // Validate required fields
+      if (!latitude || !longitude) {
+        return res.status(400).json({ error: 'Latitude and longitude are required' });
+      }
+      
+      // Save location to history
+      const locationHistory = await storage.createDeliveryLocationHistory({
+        deliveryId: id,
+        latitude,
+        longitude,
+        speed,
+        heading,
+        accuracy,
+        batteryLevel,
+        metadata
+      });
+      
+      // Update current location in delivery
+      const updatedDelivery = await storage.updateDelivery(id, {
+        currentLat: latitude,
+        currentLng: longitude,
+        lastLocationUpdateTime: new Date()
+      });
+      
+      if (!updatedDelivery) {
+        return res.status(404).json({ error: 'Delivery not found' });
+      }
+      
+      // Broadcast location via WebSocket if available
+      if (io) {
+        io.to(`delivery:${id}`).emit('deliveryLocationUpdated', {
+          deliveryId: id,
+          location: {
+            lat: latitude,
+            lng: longitude
+          },
+          timestamp: locationHistory.timestamp,
+          speed,
+          heading
+        });
+      }
+      
+      res.status(200).json({ success: true, location: locationHistory });
+    } catch (error) {
+      console.error('Error updating delivery location:', error);
+      res.status(500).json({ error: 'Failed to update delivery location' });
+    }
+  });
+  
+  // Simulate delivery route for testing
+  router.post('/delivery/:id/simulate', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const delivery = await storage.getDelivery(id);
+      
+      if (!delivery) {
+        return res.status(404).json({ error: 'Delivery not found' });
+      }
+      
+      // Check if we have origin and destination coordinates
+      if (!delivery.currentLat || !delivery.currentLng || !delivery.destinationLat || !delivery.destinationLng) {
+        return res.status(400).json({ 
+          error: 'Delivery must have current and destination coordinates to simulate a route'
+        });
+      }
+      
+      // Start simulation in the background - in a real app this would use a job queue
+      const simulationId = Date.now().toString();
+      
+      // Respond immediately with simulation ID
+      res.status(200).json({ 
+        success: true, 
+        message: 'Delivery route simulation started',
+        simulationId
+      });
+      
+      // In a real app, we'd use a proper job system, but for demo purposes:
+      setTimeout(() => {
+        startDeliverySimulation(id, delivery, io);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error starting delivery simulation:', error);
+      res.status(500).json({ error: 'Failed to start delivery simulation' });
+    }
+  });
+
   // Error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.error(err.stack);
@@ -1143,4 +1330,90 @@ export async function registerRoutes(app: any) {
   app.use('/api', router);
 
   return app;
+}
+
+// Function to simulate a delivery route with periodic location updates
+async function startDeliverySimulation(deliveryId: number, delivery: any, io?: SocketIOServer) {
+  // Parse coordinates
+  const startLat = parseFloat(delivery.currentLat);
+  const startLng = parseFloat(delivery.currentLng);
+  const endLat = parseFloat(delivery.destinationLat);
+  const endLng = parseFloat(delivery.destinationLng);
+  
+  // Calculate a simple route (straight line divided into steps)
+  const steps = 20; // Number of points along the route
+  const latStep = (endLat - startLat) / steps;
+  const lngStep = (endLng - startLng) / steps;
+  
+  // Update delivery status
+  await storage.updateDelivery(deliveryId, {
+    status: 'in_transit',
+    startTime: new Date()
+  });
+  
+  // Simulate movement along the route
+  for (let i = 0; i <= steps; i++) {
+    // Calculate current position
+    const lat = startLat + (latStep * i);
+    const lng = startLng + (lngStep * i);
+    
+    // Simulate speed and heading
+    const speed = 25 + Math.random() * 15; // Random speed between 25-40 km/h
+    const heading = Math.atan2(latStep, lngStep) * (180 / Math.PI);
+    
+    try {
+      // Save location to history
+      const locationHistory = await storage.createDeliveryLocationHistory({
+        deliveryId,
+        latitude: lat.toString(),
+        longitude: lng.toString(),
+        speed,
+        heading,
+        accuracy: 10,
+        batteryLevel: 0.8,
+        metadata: { simulated: true, step: i }
+      });
+      
+      // Update delivery with current position
+      await storage.updateDelivery(deliveryId, {
+        currentLat: lat.toString(),
+        currentLng: lng.toString(),
+        lastLocationUpdateTime: new Date(),
+        estimatedArrivalTime: new Date(Date.now() + (steps - i) * 30000) // Estimate 30 seconds per remaining step
+      });
+      
+      // Broadcast to clients if Socket.IO is available
+      if (io) {
+        io.to(`delivery:${deliveryId}`).emit('deliveryLocationUpdated', {
+          deliveryId,
+          location: { lat, lng },
+          timestamp: locationHistory.timestamp,
+          speed,
+          heading,
+          estimatedArrival: new Date(Date.now() + (steps - i) * 30000)
+        });
+      }
+      
+      // Last step - delivery completed
+      if (i === steps) {
+        await storage.updateDelivery(deliveryId, {
+          status: 'delivered',
+          completedTime: new Date()
+        });
+        
+        if (io) {
+          io.to(`delivery:${deliveryId}`).emit('deliveryCompleted', {
+            deliveryId,
+            completedTime: new Date()
+          });
+        }
+      }
+      
+      // Wait before next update (1.5 seconds between updates)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+    } catch (error) {
+      console.error(`Error in delivery simulation step ${i}:`, error);
+    }
+  }
 }

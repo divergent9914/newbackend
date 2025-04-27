@@ -4,6 +4,7 @@
   "main": "index.js",
   "dependencies": {
     "@neondatabase/serverless": "^1.0.0",
+    "@radix-ui/react-progress": "^1.1.4",
     "@stripe/react-stripe-js": "^3.6.0",
     "@stripe/stripe-js": "^7.2.0",
     "@supabase/supabase-js": "^2.49.4",
@@ -261,6 +262,7 @@
     "shebang-regex": "^3.0.0",
     "side-channel": "^1.0.6",
     "signal-exit": "^4.1.0",
+    "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "sonner": "^2.0.3",
     "source-map": "^0.6.1",

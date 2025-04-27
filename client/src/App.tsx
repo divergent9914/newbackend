@@ -9,6 +9,7 @@ import NotFound from './pages/NotFound';
 import TestPage from './pages/TestPage';
 import Checkout from './pages/customer/Checkout';
 import OrderSuccess from './pages/customer/OrderSuccess';
+import DeliveryTracker from './pages/customer/DeliveryTracker';
 import Cart from './components/customer/Cart';
 import { Toaster } from '@/components/ui/toaster';
 import './App.css';
@@ -23,12 +24,16 @@ function App() {
                          location === '/checkout' || 
                          location === '/order-success' ||
                          location.startsWith('/product/') ||
-                         location.startsWith('/category/');
+                         location.startsWith('/category/') ||
+                         location.startsWith('/delivery/');
   
   const isStoreRoute = location === '/store' || location.startsWith('/store/');
   
   // Determine if we should show the cart component (on customer routes except checkout and order success)
-  const showCart = isCustomerRoute && location !== '/checkout' && location !== '/order-success';
+  const showCart = isCustomerRoute && 
+                  location !== '/checkout' && 
+                  location !== '/order-success' && 
+                  !location.startsWith('/delivery/');
 
   // Render Customer-facing routes
   if (isCustomerRoute) {
@@ -38,6 +43,9 @@ function App() {
           <Route path="/" component={StoreFront} />
           <Route path="/checkout" component={Checkout} />
           <Route path="/order-success" component={OrderSuccess} />
+          <Route path="/delivery/:id">
+            {(params) => <DeliveryTracker />}
+          </Route>
           <Route path="/product/:id">
             {(params) => <StoreFront productId={params.id} />}
           </Route>

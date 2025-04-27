@@ -7,7 +7,8 @@ import {
   Order, InsertOrder,
   Payment, InsertPayment,
   Product, InsertProduct,
-  ServiceMetric, InsertServiceMetric
+  ServiceMetric, InsertServiceMetric,
+  DeliveryLocationHistory, InsertDeliveryLocationHistory
 } from '../shared/schema';
 import { db } from './db';
 import { eq } from 'drizzle-orm';
@@ -20,7 +21,8 @@ import {
   orders,
   payments,
   products,
-  serviceMetrics
+  serviceMetrics,
+  deliveryLocationHistory
 } from '../shared/schema';
 
 // Storage Interface
@@ -75,6 +77,10 @@ export interface IStorage {
   // Service Metrics operations
   getServiceMetrics(): Promise<ServiceMetric[]>;
   createServiceMetric(metric: InsertServiceMetric): Promise<ServiceMetric>;
+  
+  // Delivery Location History operations
+  getDeliveryLocationHistory(deliveryId: number): Promise<DeliveryLocationHistory[]>;
+  createDeliveryLocationHistory(history: InsertDeliveryLocationHistory): Promise<DeliveryLocationHistory>;
 }
 
 // Database Storage Implementation
@@ -277,6 +283,16 @@ export class DatabaseStorage implements IStorage {
     const [newMetric] = await db.insert(serviceMetrics).values(metric).returning();
     return newMetric;
   }
+  
+  // Delivery Location History operations
+  async getDeliveryLocationHistory(deliveryId: number): Promise<DeliveryLocationHistory[]> {
+    return await db.select().from(deliveryLocationHistory).where(eq(deliveryLocationHistory.deliveryId, deliveryId));
+  }
+  
+  async createDeliveryLocationHistory(history: InsertDeliveryLocationHistory): Promise<DeliveryLocationHistory> {
+    const [newHistory] = await db.insert(deliveryLocationHistory).values(history).returning();
+    return newHistory;
+  }
 }
 
 // Memory Storage Implementation for Development/Testing
@@ -290,6 +306,7 @@ export class MemStorage implements IStorage {
   private ondcIntegrations: OndcIntegration[] = [];
   private apiRoutesData: ApiRoute[] = [];
   private serviceMetricsData: ServiceMetric[] = [];
+  private deliveryLocationHistoryData: DeliveryLocationHistory[] = [];
 
   private nextIds = {
     user: 1,
@@ -300,7 +317,8 @@ export class MemStorage implements IStorage {
     delivery: 1,
     ondcIntegration: 1,
     apiRoute: 1,
-    serviceMetric: 1
+    serviceMetric: 1,
+    deliveryLocationHistory: 1
   };
 
   // User operations
@@ -487,7 +505,17 @@ export class MemStorage implements IStorage {
       trackingNumber: delivery.trackingNumber || null,
       carrier: delivery.carrier || null,
       estimatedDelivery: delivery.estimatedDelivery || null,
-      updatedAt: now
+      updatedAt: now,
+      currentLat: delivery.currentLat || null,
+      currentLng: delivery.currentLng || null,
+      destinationLat: delivery.destinationLat || null,
+      destinationLng: delivery.destinationLng || null,
+      deliveryAgentName: delivery.deliveryAgentName || null,
+      deliveryAgentPhone: delivery.deliveryAgentPhone || null,
+      startTime: delivery.startTime || null,
+      completedTime: delivery.completedTime || null,
+      estimatedArrivalTime: delivery.estimatedArrivalTime || null,
+      lastLocationUpdateTime: delivery.lastLocationUpdateTime || null
     };
     this.deliveries.push(newDelivery);
     return newDelivery;
@@ -599,6 +627,29 @@ export class MemStorage implements IStorage {
     };
     this.serviceMetricsData.push(newMetric);
     return newMetric;
+  }
+  
+  // Delivery Location History operations
+  async getDeliveryLocationHistory(deliveryId: number): Promise<DeliveryLocationHistory[]> {
+    return this.deliveryLocationHistoryData.filter(h => h.deliveryId === deliveryId);
+  }
+  
+  async createDeliveryLocationHistory(history: InsertDeliveryLocationHistory): Promise<DeliveryLocationHistory> {
+    const now = new Date();
+    const newHistory: DeliveryLocationHistory = {
+      id: this.nextIds.deliveryLocationHistory++,
+      deliveryId: history.deliveryId,
+      latitude: history.latitude,
+      longitude: history.longitude,
+      timestamp: history.timestamp || now,
+      speed: history.speed || null,
+      heading: history.heading || null,
+      accuracy: history.accuracy || null,
+      batteryLevel: history.batteryLevel || null,
+      metadata: history.metadata || null
+    };
+    this.deliveryLocationHistoryData.push(newHistory);
+    return newHistory;
   }
 }
 

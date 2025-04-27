@@ -7,6 +7,7 @@ import http from 'http';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { Server as SocketIOServer } from 'socket.io';
 
 // Handle the __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -22,13 +23,22 @@ const PORT = process.env.PORT || 3001;
 // Create HTTP server
 const server = http.createServer(app);
 
+// Create Socket.IO server
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  },
+  path: '/ws'
+});
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Register API routes
-registerRoutes(app);
+// Register API routes and WebSocket handlers
+registerRoutes(app, io);
 
 // Production mode: Serve static client build if it exists
 const clientDistPath = path.resolve(__dirname, '../../client/dist');
