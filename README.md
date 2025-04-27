@@ -1,183 +1,130 @@
-# ONDC E-commerce System
+# ONDC E-commerce Platform
 
-A comprehensive microservices-based e-commerce system with frontend, API gateway, and services (Order, Inventory, Payment, Delivery) that's compatible with the Open Network for Digital Commerce (ONDC) protocol.
+A scalable microservices-based e-commerce platform compatible with ONDC protocol, designed to provide a flexible and integrated digital commerce solution with enhanced user experience.
 
-## Project Overview
+## Features
 
-This project consists of two main components:
-1. Customer-facing storefront for browsing and purchasing products
-2. Admin panel for managing ONDC integration and monitoring operations
+- **Microservices Architecture**: Order, Inventory, Payment, Delivery services
+- **ONDC Protocol Integration**: Compatible with the Open Network for Digital Commerce
+- **Node.js Backend**: Express server with TypeScript for type safety
+- **Vite React Frontend**: Modern React application with Vite for fast development
+- **State Management**: Zustand for state management and React Query for data fetching
+- **Database**: PostgreSQL database with Drizzle ORM for data modeling
+- **Styling**: Tailwind CSS with shadcn/ui component library
+- **PetPooja Integration**: Item availability toggled through PetPooja order app
+- **Centralized Delivery**: Based from AAMIS, Hakimapara, Siliguri
 
-### Technology Stack
+## System Architecture
 
-- **Frontend**: React with Vite, TailwindCSS, Shadcn UI components
-- **Backend**: Node.js with Express
-- **Database**: PostgreSQL with Drizzle ORM
-- **State Management**: Zustand, React Query
-- **Routing**: Wouter
-- **Form Management**: React Hook Form with Zod validation
+The application consists of two main components:
 
-## Architecture
-
-The application follows a client-server architecture:
-
-- **Client**: The React frontend that handles user interactions and displays data
-- **Server**: An Express backend that manages API routes and data persistence
-- **Database**: PostgreSQL for data storage (with MemStorage as a fallback)
-
-## Project Structure
-
-```
-├── client/                # Frontend React application
-│   ├── public/            # Static assets
-│   └── src/
-│       ├── components/    # Reusable UI components
-│       ├── lib/           # Utilities and shared code
-│       ├── pages/         # Page components
-│       └── styles/        # CSS styles
-├── server/                # Backend Express application
-│   ├── src/               # Server source code
-│   ├── index.ts           # Server entry point
-│   ├── routes.ts          # API route definitions
-│   ├── storage.ts         # Data storage interface
-│   ├── db.ts              # Database connection
-│   └── supabase.ts        # Supabase connection (for integration)
-├── shared/                # Shared code between client and server
-│   ├── types/             # TypeScript type definitions
-│   └── schema.ts          # Database schema definitions
-├── GitHubLoader/          # Reference code for UI/UX and ONDC integration
-├── drizzle.config.ts      # Drizzle ORM configuration
-├── start.js               # Simple application startup script
-└── run-app.js             # Enhanced application startup script with better output
-```
-
-## Database Schema
-
-The application uses the following database tables, defined in `shared/schema.ts`:
-
-- `users`: User accounts and authentication
-- `products`: Product catalog with details and pricing
-- `orders`: Customer orders with status tracking
-- `order_items`: Individual items in orders
-- `payments`: Payment records associated with orders
-- `deliveries`: Delivery information and status
-- `api_routes`: API route configurations for ONDC integration
-- `ondc_integration`: ONDC integration settings and credentials
-- `service_metrics`: Metrics for monitoring service performance
-
-## Storage Implementation
-
-The application supports two storage implementations:
-
-1. **DatabaseStorage**: Uses PostgreSQL with Drizzle ORM
-2. **MemStorage**: In-memory storage for development/testing
-
-The active storage is determined by the environment variable `USE_DATABASE`. If set to 'true', DatabaseStorage is used; otherwise, MemStorage is used.
+1. **Customer-Facing Storefront**: The main e-commerce interface for customers to browse and order products.
+2. **Admin Panel / API Gateway**: The backend management system for ONDC integration and store operations.
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js v18+ and npm
+- Node.js (v16+)
+- npm or yarn
 - PostgreSQL database
+- Supabase account (for production)
 
-### Environment Variables
+### Installation
 
-The following environment variables are required:
+1. Clone the repository:
+   ```
+   git clone https://github.com/your-username/ondc-ecommerce.git
+   cd ondc-ecommerce
+   ```
 
-```
-DATABASE_URL=postgresql://username:password@hostname:port/database
-USE_DATABASE=true
-SUPABASE_URL=your-supabase-url
-SUPABASE_API_KEY=your-supabase-api-key
-```
+2. Install dependencies:
+   ```
+   npm install
+   ```
 
-### Running the Application
+3. Set up environment variables:
+   ```
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
 
-To start both client and server components:
-
-```bash
-node run-app.js
-```
-
-This will start:
-- Backend server on port 3001
-- Frontend development server on port 5173
-
-Alternatively, you can also use:
-
-```bash
-node start.js
-```
-
-### Database Migrations
-
-To apply database migrations:
-
-```bash
-npx drizzle-kit push
-```
-
-## API Routes
-
-The backend server provides the following API routes:
-
-- **Authentication**: `/api/auth/login`
-- **Products**: CRUD operations on `/api/products`
-- **Orders**: CRUD operations on `/api/orders`
-- **ONDC Integration**: 
-  - Search: `/api/ondc/search`
-  - Select: `/api/ondc/select`
-  - Initialize: `/api/ondc/init`
-  - Confirm: `/api/ondc/confirm`
-  - Status: `/api/ondc/status`
-
-## ONDC Integration
-
-The application is compatible with the Open Network for Digital Commerce (ONDC) protocol, supporting:
-
-1. Buyer App functionalities
-2. Seller App functionalities
-3. Gateway integration
-
-Refer to the routes in `server/routes.ts` for specific ONDC protocol handlers.
+4. Start the development server:
+   ```
+   npm run dev
+   ```
 
 ## Deployment
 
-The recommended deployment strategy is:
+### Frontend Deployment (Vercel)
 
-- Frontend: Vercel or similar static hosting platform
-- Backend: Render, Heroku, or similar containerized service platform
-- Database: Managed PostgreSQL service (Neon, AWS RDS, etc.)
+The React frontend should be deployed on Vercel:
+- Connect GitHub repository to Vercel
+- Configure build settings:
+  - Root Directory: `client`
+  - Build Command: `npm run build`
+  - Output Directory: `dist`
 
-## Development Guidelines
+### Backend Deployment (Render)
 
-- Follow the storage interface in `server/storage.ts` for all database operations
-- Use Drizzle ORM for database queries
-- Keep business logic in the backend, using the frontend primarily for presentation
-- Ensure API routes are properly validated with Zod schemas
-- Use React Query for data fetching and cache management
-- Follow the component structure in the GitHubLoader directory for UI consistency
+The Node.js backend should be deployed on Render:
+- Connect GitHub repository to Render
+- Configure as a Web Service with:
+  - Build Command: `npm install && npm run build`
+  - Start Command: `npm run start:server`
 
-## Current State and Next Steps
+### Database (Supabase)
 
-The current implementation includes:
+- Create a Supabase project
+- Use the PostgreSQL connection string in your backend's environment variables
+- Set up Supabase Edge Functions for specific functionality
 
-- ✅ Complete database schema with relations
-- ✅ Storage interfaces for all entity types
-- ✅ Server and client startup configuration
-- ✅ PostgreSQL database setup with Drizzle ORM
-- ✅ Database schema migrations
+## Key Components
 
-Next steps for development:
+### Customer Interface
+- **Homepage**: Displays food products organized by category
+- **Product Detail**: Shows detailed information about a food item
+- **Cart**: Side panel showing selected items
+- **Checkout**: Form for order details and payment
+- **Order Success**: Confirmation page after successful order
 
-- ✅ Created simple startup scripts for easy running (`run-app.js`)
-- Implement client-side components for product browsing and ordering
-- Complete the ONDC protocol integration in the admin panel
-- Add authentication and user management features
-- Implement order tracking and delivery management
-- Add payment processing integration
+### Admin Interface
+- **Dashboard**: Overview of store performance
+- **ONDC Integration**: Connectivity with ONDC network
+- **API Gateway**: Monitor and manage API endpoints
+- **GitHub Loader**: Import components from GitHub
+- **Supabase Import**: Database configuration
+
+## Integration Points
+
+- **ONDC Protocol**: Integrates with Open Network for Digital Commerce
+- **PetPooja**: Menu and availability management
+- **Stripe**: Payment processing
+- **Supabase**: Database, auth, and edge functions
+
+## Central Delivery Location
+
+All delivery distances are calculated from AAMIS, Hakimapara, Siliguri until additional franchise locations are added.
+
+## Documentation
+
+Detailed documentation is available in the docs folder:
+
+- [Project Documentation](./docs/PROJECT_DOCUMENTATION.md): Comprehensive system details
+- [Deployment Guide](./docs/DEPLOYMENT_GUIDE.md): Step-by-step deployment instructions
+- [Integration Guide](./docs/INTEGRATION_GUIDE.md): PetPooja and ONDC integration details
+- [GitHub Setup](./docs/GITHUB_SETUP.md): Version control and GitHub workflow
+
+## Technologies Used
+
+- **Frontend**: React, Vite, TailwindCSS, shadcn/ui
+- **Backend**: Node.js, Express, TypeScript
+- **Database**: PostgreSQL with Drizzle ORM
+- **Auth**: Supabase Auth
+- **State Management**: Zustand, React Query
+- **Payment Processing**: Stripe
+- **Deployment**: Vercel, Render, Supabase
 
 ## License
 
-MIT
+This project is licensed under the MIT License
