@@ -1,0 +1,171 @@
+services:
+  # API Gateway Service
+  - type: web
+    name: ondc-api-gateway
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node dist/services/api-gateway/src/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false
+      - key: FRONTEND_URL
+        value: https://ondc-frontend.vercel.app
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ONDC_SUBSCRIBER_ID
+        sync: false
+      - key: ONDC_SUBSCRIBER_URL
+        sync: false
+      - key: ONDC_REGISTRY_URL
+        sync: false
+      - key: ONDC_ENCRYPTION_PRIVATE_KEY
+        sync: false
+      - key: ONDC_SIGNING_PRIVATE_KEY
+        sync: false
+      - key: DEFAULT_LATITUDE
+        value: "26.7271012"
+      - key: DEFAULT_LONGITUDE
+        value: "88.3952861"
+      - key: MAX_DELIVERY_DISTANCE
+        value: "10"
+
+  # User Service
+  - type: web
+    name: ondc-user-service
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node dist/services/user-service/src/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        sync: false
+      - fromService:
+          name: ondc-api-gateway
+          type: web
+          envVarKey: JWT_SECRET
+      - key: API_GATEWAY_URL
+        value: https://ondc-api-gateway.onrender.com
+
+  # Product Service
+  - type: web
+    name: ondc-product-service
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node dist/services/product-service/src/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3002
+      - key: DATABASE_URL
+        sync: false
+      - key: API_GATEWAY_URL
+        value: https://ondc-api-gateway.onrender.com
+
+  # Order Service
+  - type: web
+    name: ondc-order-service
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node dist/services/order-service/src/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3003
+      - key: DATABASE_URL
+        sync: false
+      - key: API_GATEWAY_URL
+        value: https://ondc-api-gateway.onrender.com
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+  # Delivery Service
+  - type: web
+    name: ondc-delivery-service
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node dist/services/delivery-service/src/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3004
+      - key: DATABASE_URL
+        sync: false
+      - key: API_GATEWAY_URL
+        value: https://ondc-api-gateway.onrender.com
+      - key: DEFAULT_LATITUDE
+        value: "26.7271012"
+      - key: DEFAULT_LONGITUDE
+        value: "88.3952861"
+      - key: MAX_DELIVERY_DISTANCE
+        value: "10"
+
+  # ONDC Service
+  - type: web
+    name: ondc-service
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node dist/services/ondc-service/src/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3005
+      - key: DATABASE_URL
+        sync: false
+      - key: API_GATEWAY_URL
+        value: https://ondc-api-gateway.onrender.com
+      - key: ONDC_SUBSCRIBER_ID
+        sync: false
+      - key: ONDC_SUBSCRIBER_URL
+        sync: false
+      - key: ONDC_REGISTRY_URL
+        sync: false
+      - key: ONDC_ENCRYPTION_PRIVATE_KEY
+        sync: false
+      - key: ONDC_SIGNING_PRIVATE_KEY
+        sync: false
+
+databases:
+  - name: ondc-postgres
+    region: singapore
+    plan: free
+    databaseName: ondc
+    user: ondc_user
