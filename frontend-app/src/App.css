@@ -1,0 +1,62 @@
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+.app-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.server-status {
+  background-color: var(--card);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.status-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.error {
+  background-color: rgba(248, 113, 113, 0.1);
+  border-left: 3px solid var(--danger);
+  padding: 1rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+}
+
+.form-container {
+  background-color: var(--card);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.message-form {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.message-form input {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 1rem;
+  }
+  
+  .status-details {
+    grid-template-columns: 1fr;
+  }
+  
+  .message-form {
+    flex-direction: column;
+  }
+}
