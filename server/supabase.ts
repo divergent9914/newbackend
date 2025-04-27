@@ -25,7 +25,8 @@ export async function testSupabaseConnection() {
       return { connected: false, error: 'Supabase credentials not configured' };
     }
     
-    const { data, error } = await supabase.from('services').select('count').limit(1);
+    // Just check if we can connect to Supabase without querying a specific table
+    const { data, error } = await supabase.auth.getSession();
     
     if (error) {
       throw error;

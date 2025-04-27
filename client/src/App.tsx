@@ -6,6 +6,7 @@ import SupabaseImportPage from './pages/SupabaseImportPage';
 import OndcPage from './pages/OndcPage';
 import StoreFront from './pages/StoreFront';
 import NotFound from './pages/NotFound';
+import TestPage from './pages/TestPage';
 import Cart from './components/customer/Cart';
 import './App.css';
 import './styles/layout.css';
@@ -35,6 +36,7 @@ function App() {
           <Route path="/github-loader" component={GitHubLoaderPage} />
           <Route path="/supabase-import" component={SupabaseImportPage} />
           <Route path="/ondc" component={OndcPage} />
+          <Route path="/test" component={TestPage} />
           <Route path="/api-gateway" component={() => <h1>API Gateway (Coming Soon)</h1>} />
           <Route path="/monitoring" component={() => <h1>Monitoring (Coming Soon)</h1>} />
           <Route path="/documentation" component={() => <h1>Documentation (Coming Soon)</h1>} />
