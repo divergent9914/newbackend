@@ -15,7 +15,8 @@ import {
   deliveryInsertSchema,
   apiRouteInsertSchema,
   ondcIntegrationInsertSchema,
-  serviceMetricInsertSchema
+  serviceMetricInsertSchema,
+  Order
 } from '../shared/schema';
 import { z } from 'zod';
 

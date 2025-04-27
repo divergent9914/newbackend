@@ -314,8 +314,10 @@ export class MemStorage implements IStorage {
 
   async createUser(user: InsertUser): Promise<User> {
     const newUser: User = {
-      ...user,
       id: this.nextIds.user++,
+      username: user.username,
+      password: user.password,
+      email: user.email,
       role: user.role || 'user'
     };
     this.users.push(newUser);
@@ -355,7 +357,13 @@ export class MemStorage implements IStorage {
     const newProduct: Product = {
       ...product,
       id: this.nextIds.product++,
-      stock: product.stock || 0
+      name: product.name,
+      description: product.description || null,
+      price: product.price,
+      categoryId: product.categoryId || null,
+      sku: product.sku || null,
+      stock: product.stock || null,
+      imageUrl: product.imageUrl || null
     };
     this.products.push(newProduct);
     return newProduct;
@@ -393,10 +401,13 @@ export class MemStorage implements IStorage {
   async createOrder(order: InsertOrder): Promise<Order> {
     const now = new Date();
     const newOrder: Order = {
-      ...order,
       id: this.nextIds.order++,
+      status: order.status,
+      userId: order.userId,
+      totalAmount: order.totalAmount,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
+      ondcOrderId: order.ondcOrderId || null
     };
     this.orders.push(newOrder);
     return newOrder;
@@ -423,8 +434,11 @@ export class MemStorage implements IStorage {
 
   async createOrderItem(orderItem: InsertOrderItem): Promise<OrderItem> {
     const newOrderItem: OrderItem = {
-      ...orderItem,
-      id: this.nextIds.orderItem++
+      id: this.nextIds.orderItem++,
+      orderId: orderItem.orderId,
+      productId: orderItem.productId,
+      quantity: orderItem.quantity,
+      unitPrice: orderItem.unitPrice
     };
     this.orderItems.push(newOrderItem);
     return newOrderItem;
@@ -442,8 +456,12 @@ export class MemStorage implements IStorage {
   async createPayment(payment: InsertPayment): Promise<Payment> {
     const now = new Date();
     const newPayment: Payment = {
-      ...payment,
       id: this.nextIds.payment++,
+      status: payment.status,
+      orderId: payment.orderId,
+      amount: payment.amount,
+      method: payment.method,
+      transactionId: payment.transactionId || null,
       createdAt: now
     };
     this.payments.push(newPayment);
@@ -462,8 +480,13 @@ export class MemStorage implements IStorage {
   async createDelivery(delivery: InsertDelivery): Promise<Delivery> {
     const now = new Date();
     const newDelivery: Delivery = {
-      ...delivery,
       id: this.nextIds.delivery++,
+      status: delivery.status,
+      orderId: delivery.orderId,
+      address: delivery.address,
+      trackingNumber: delivery.trackingNumber || null,
+      carrier: delivery.carrier || null,
+      estimatedDelivery: delivery.estimatedDelivery || null,
       updatedAt: now
     };
     this.deliveries.push(newDelivery);
@@ -496,9 +519,13 @@ export class MemStorage implements IStorage {
   async createOndcIntegration(integration: InsertOndcIntegration): Promise<OndcIntegration> {
     const now = new Date();
     const newIntegration: OndcIntegration = {
-      ...integration,
       id: this.nextIds.ondcIntegration++,
-      lastSync: now
+      type: integration.type,
+      status: integration.status,
+      endpoint: integration.endpoint,
+      mappedService: integration.mappedService,
+      lastSync: now,
+      complianceScore: integration.complianceScore || null
     };
     this.ondcIntegrations.push(newIntegration);
     return newIntegration;
@@ -523,8 +550,11 @@ export class MemStorage implements IStorage {
 
   async createApiRoute(route: InsertApiRoute): Promise<ApiRoute> {
     const newRoute: ApiRoute = {
-      ...route,
-      id: this.nextIds.apiRoute++
+      id: this.nextIds.apiRoute++,
+      path: route.path,
+      method: route.method,
+      service: route.service,
+      active: route.active !== undefined ? route.active : true
     };
     this.apiRoutesData.push(newRoute);
     return newRoute;
@@ -558,8 +588,13 @@ export class MemStorage implements IStorage {
   async createServiceMetric(metric: InsertServiceMetric): Promise<ServiceMetric> {
     const now = new Date();
     const newMetric: ServiceMetric = {
-      ...metric,
       id: this.nextIds.serviceMetric++,
+      status: metric.status,
+      serviceName: metric.serviceName,
+      uptime: metric.uptime || null,
+      requestCount: metric.requestCount || null,
+      errorRate: metric.errorRate || null,
+      averageLatency: metric.averageLatency || null,
       timestamp: now
     };
     this.serviceMetricsData.push(newMetric);
