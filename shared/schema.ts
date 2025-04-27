@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, boolean, real } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, integer, boolean, real, jsonb } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { relations } from 'drizzle-orm';
@@ -21,7 +21,17 @@ export const deliveries = pgTable('deliveries', {
   trackingNumber: text('tracking_number'),
   carrier: text('carrier'),
   estimatedDelivery: timestamp('estimated_delivery'),
-  updatedAt: timestamp('updated_at')
+  updatedAt: timestamp('updated_at'),
+  currentLat: text('current_lat'),
+  currentLng: text('current_lng'),
+  destinationLat: text('destination_lat'),
+  destinationLng: text('destination_lng'),
+  deliveryAgentName: text('delivery_agent_name'),
+  deliveryAgentPhone: text('delivery_agent_phone'),
+  startTime: timestamp('start_time'),
+  completedTime: timestamp('completed_time'),
+  estimatedArrivalTime: timestamp('estimated_arrival_time'),
+  lastLocationUpdateTime: timestamp('last_location_update_time')
 });
 
 // ONDC Integration table
@@ -99,11 +109,33 @@ export const users = pgTable('users', {
   role: text('role').notNull().default('user')
 });
 
+// Delivery Location History table
+export const deliveryLocationHistory = pgTable('delivery_location_history', {
+  id: serial('id').primaryKey(),
+  deliveryId: integer('delivery_id').notNull(),
+  latitude: text('latitude').notNull(),
+  longitude: text('longitude').notNull(),
+  timestamp: timestamp('timestamp').notNull().defaultNow(),
+  speed: real('speed'),
+  heading: real('heading'),
+  accuracy: real('accuracy'),
+  batteryLevel: real('battery_level'),
+  metadata: jsonb('metadata')
+});
+
 // Relations
-export const orderDeliveriesRelation = relations(deliveries, ({ one }) => ({
+export const orderDeliveriesRelation = relations(deliveries, ({ one, many }) => ({
   order: one(orders, {
     fields: [deliveries.orderId],
     references: [orders.id]
+  }),
+  locationHistory: many(deliveryLocationHistory)
+}));
+
+export const deliveryLocationHistoryRelation = relations(deliveryLocationHistory, ({ one }) => ({
+  delivery: one(deliveries, {
+    fields: [deliveryLocationHistory.deliveryId],
+    references: [deliveries.id]
   })
 }));
 
@@ -180,6 +212,11 @@ export const userInsertSchema = createInsertSchema(users);
 export const userSelectSchema = createSelectSchema(users);
 export type User = z.infer<typeof userSelectSchema>;
 export type InsertUser = z.infer<typeof userInsertSchema>;
+
+export const deliveryLocationHistoryInsertSchema = createInsertSchema(deliveryLocationHistory);
+export const deliveryLocationHistorySelectSchema = createSelectSchema(deliveryLocationHistory);
+export type DeliveryLocationHistory = z.infer<typeof deliveryLocationHistorySelectSchema>;
+export type InsertDeliveryLocationHistory = z.infer<typeof deliveryLocationHistoryInsertSchema>;
 
 // Validation schemas
 export const loginSchema = z.object({
